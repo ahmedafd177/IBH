@@ -1,0 +1,75 @@
+/* ═══════════════════════════════════════
+   IBH DESIGN TOKENS
+   ═══════════════════════════════════════ */
+:root {
+  /* Brand */
+  --blue:     #1455A4;
+  --blue-d:   #0C3874;
+  --blue-m:   #1A6CC8;
+  --blue-l:   #2D78D4;
+  --blue-xl:  #EBF2FC;
+  --gold:     #C8962A;
+  --gold-l:   #F0C060;
+  --gold-xl:  #FFF8E7;
+
+  /* Neutrals */
+  --white:  #FFFFFF;
+  --cream:  #FAFAF8;
+  --n-50:   #F9FAFB;
+  --n-100:  #F3F4F6;
+  --n-200:  #E5E7EB;
+  --n-300:  #D1D5DB;
+  --n-400:  #9CA3AF;
+  --n-500:  #6B7280;
+  --n-600:  #4B5563;
+  --n-700:  #374151;
+  --n-800:  #1F2937;
+  --n-900:  #111827;
+
+  /* Status */
+  --ok:       #15803D;
+  --ok-bg:    #DCFCE7;
+  --err:      #DC2626;
+  --err-bg:   #FEE2E2;
+  --warn:     #D97706;
+  --warn-bg:  #FEF3C7;
+  --info-bg:  #DBEAFE;
+
+  /* Typography */
+  --f-display: 'Playfair Display', Georgia, serif;
+  --f-body:    'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Layout */
+  --max-w:   1340px;
+  --header-h: 68px;
+
+  /* Radius */
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   14px;
+  --r-xl:   20px;
+  --r-2xl:  28px;
+  --r-pill: 9999px;
+
+  /* Shadows */
+  --sh-xs:   0 1px 2px rgba(0,0,0,.06);
+  --sh-sm:   0 2px 8px rgba(0,0,0,.08);
+  --sh-md:   0 4px 16px rgba(20,85,164,.10);
+  --sh-lg:   0 8px 32px rgba(20,85,164,.14);
+  --sh-xl:   0 20px 56px rgba(20,85,164,.18);
+  --sh-card: 0 2px 8px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.04);
+
+  /* Transitions */
+  --t-fast: 0.15s ease;
+  --t-base: 0.25s ease;
+  --t-slow: 0.4s ease;
+
+  /* Z-index */
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-overlay:  300;
+  --z-drawer:   350;
+  --z-modal:    400;
+  --z-admin:    450;
+  --z-toast:    500;
+}

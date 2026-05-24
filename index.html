@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Inspiring Beauty Hub — Premium perfumes, hair care & body care. 500+ products from 80+ world-class brands." />
+  <title>Inspiring Beauty Hub — Premium Fragrances &amp; Beauty</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="icon" type="image/jpeg" href="assets/images/logo.jpeg" />
+</head>
+<body>
+
+<!-- NOTIFICATION BAR -->
+<div id="notif-bar" role="banner" aria-label="Promotions">
+  <div class="container notif-inner">
+    <div class="notif-socials">
+      <a href="#" class="notif-social-link" aria-label="WhatsApp">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </a>
+      <a href="#" class="notif-social-link" aria-label="Instagram">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      </a>
+      <a href="#" class="notif-social-link" aria-label="TikTok">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+      </a>
+    </div>
+    <p class="notif-text">
+      <span class="notif-badge">OFFER</span>
+      Free deliver With Nairobi <strong>CBD</strong> &mdash; Shop now!
+    </p>
+    <button id="close-notif" class="notif-close" aria-label="Dismiss notification">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header id="header" role="banner">
+  <div class="container header-inner">
+
+    <a href="#" class="header-logo" id="logo-link" aria-label="Inspiring Beauty Hub home">
+      <img src="assets/images/logo.jpeg" alt="" class="logo-img" aria-hidden="true" />
+      <div class="logo-text">
+        <span class="logo-name">Inspiring Beauty Hub</span>
+        <span class="logo-tagline">Premium Fragrances &amp; Beauty</span>
+      </div>
+    </a>
+
+    <nav class="header-nav" aria-label="Main navigation">
+      <ul class="nav-list" role="list">
+        <li class="nav-item"><a href="#" class="nav-link">Home</a></li>
+
+        <li class="nav-item has-dropdown">
+          <a href="#" class="nav-link" data-cat="perfume" aria-haspopup="true">
+            Perfume <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </a>
+          <div class="nav-dropdown" role="menu">
+            <div class="dropdown-inner">
+              <div class="dropdown-col">
+                <p class="dropdown-heading">By Brand</p>
+                <ul>
+                  <li><a href="#" data-cat="perfume" data-filter="brand:Chanel">Chanel</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="brand:Dior">Dior</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="brand:Tom Ford">Tom Ford</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="brand:Versace">Versace</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="brand:Ajmal">Ajmal</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="brand:Rasasi">Rasasi</a></li>
+                </ul>
+              </div>
+              <div class="dropdown-col">
+                <p class="dropdown-heading">By Gender</p>
+                <ul>
+                  <li><a href="#" data-cat="perfume" data-filter="gender:Male">Men&rsquo;s</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="gender:Female">Women&rsquo;s</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="gender:Unisex">Unisex</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="gender:Children">Children</a></li>
+                </ul>
+              </div>
+              <div class="dropdown-col">
+                <p class="dropdown-heading">By Type</p>
+                <ul>
+                  <li><a href="#" data-cat="perfume" data-filter="subcat:Eau de Parfum">Eau de Parfum</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="subcat:Eau de Toilette">Eau de Toilette</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="subcat:Oud &amp; Oriental">Oud &amp; Oriental</a></li>
+                  <li><a href="#" data-cat="perfume" data-filter="subcat:Body Spray">Body Sprays</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="nav-item has-dropdown">
+          <a href="#" class="nav-link" data-cat="hair" aria-haspopup="true">
+            Hair Care <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </a>
+          <div class="nav-dropdown" role="menu">
+            <div class="dropdown-inner">
+              <div class="dropdown-col">
+                <p class="dropdown-heading">Products</p>
+                <ul>
+                  <li><a href="#" data-cat="hair" data-filter="subcat:Shampoo">Shampoo</a></li>
+                  <li><a href="#" data-cat="hair" data-filter="subcat:Conditioner">Conditioner</a></li>
+                  <li><a href="#" data-cat="hair" data-filter="subcat:Hair Mask">Masks</a></li>
+                  <li><a href="#" data-cat="hair" data-filter="subcat:Hair Oil">Hair Oils</a></li>
+                  <li><a href="#" data-cat="hair" data-filter="subcat:Styling">Styling</a></li>
+                </ul>
+              </div>
+              <div class="dropdown-col">
+                <p class="dropdown-heading">Top Brands</p>
+                <ul>
+                  <li><a href="#" data-cat="hair" data-filter="brand:OGX">OGX</a></li>
+                  <li><a href="#" data-cat="hair" data-filter="brand:Shea Moisture">Shea Moisture</a></li>
+                  <li><a href="#" data-cat="hair" data-filter="brand:Cantu">Cantu</a></li>
+                  <li><a href="#" data-cat="hair" data-filter="brand:Pantene">Pantene</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="nav-item has-dropdown">
+          <a href="#" class="nav-link" data-cat="body" aria-haspopup="true">
+            Body Care <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </a>
+          <div class="nav-dropdown" role="menu">
+            <div class="dropdown-inner">
+              <div class="dropdown-col">
+                <p class="dropdown-heading">Products</p>
+                <ul>
+                  <li><a href="#" data-cat="body" data-filter="subcat:Body Lotion">Body Lotions</a></li>
+                  <li><a href="#" data-cat="body" data-filter="subcat:Body Wash">Body Wash</a></li>
+                  <li><a href="#" data-cat="body" data-filter="subcat:Body Scrub">Scrubs</a></li>
+                  <li><a href="#" data-cat="body" data-filter="subcat:Deodorant">Deodorants</a></li>
+                  <li><a href="#" data-cat="body" data-filter="subcat:Sunscreen">Sunscreen</a></li>
+                </ul>
+              </div>
+              <div class="dropdown-col">
+                <p class="dropdown-heading">Top Brands</p>
+                <ul>
+                  <li><a href="#" data-cat="body" data-filter="brand:Nivea">Nivea</a></li>
+                  <li><a href="#" data-cat="body" data-filter="brand:Dove">Dove</a></li>
+                  <li><a href="#" data-cat="body" data-filter="brand:The Body Shop">The Body Shop</a></li>
+                  <li><a href="#" data-cat="body" data-filter="brand:Vaseline">Vaseline</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="nav-item has-dropdown">
+          <a href="#" class="nav-link" data-action="show-brands" aria-haspopup="true">
+            Brands <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </a>
+          <div class="nav-dropdown nav-dropdown-brands" role="menu" aria-label="All brands">
+            <div class="dropdown-brands-wrap">
+              <p class="dropdown-heading">All Brands</p>
+              <div class="dropdown-brands-grid" id="nav-brands-grid">
+                <!-- populated by app.js on init -->
+              </div>
+              <div class="dropdown-brands-footer">
+                <a href="#" data-action="show-brands" class="dropdown-view-all">View all brands →</a>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="nav-item"><a href="#why-ibh" class="nav-link">About</a></li>
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <div class="header-search" id="header-search">
+        <button class="search-toggle" id="search-toggle" aria-label="Search" aria-expanded="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+        <div class="search-expand" id="search-expand" role="search">
+          <input type="search" id="search-input" class="search-input" placeholder="Search products, brands…" autocomplete="off" aria-label="Search" />
+          <button class="search-clear" id="search-clear" aria-label="Clear search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="header-btn" id="wishlist-btn" aria-label="Wishlist">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span class="header-btn-badge" id="wishlist-count" hidden>0</span>
+      </button>
+
+      <button class="header-btn cart-btn" id="cart-btn" aria-label="Shopping cart">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="header-btn-badge" id="cart-count" hidden>0</span>
+      </button>
+
+      <button class="header-btn" id="admin-btn" aria-label="Admin panel" title="Admin">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </button>
+
+      <button class="hamburger" id="menu-toggle" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <div class="search-results" id="search-results" hidden aria-live="polite">
+      <div class="container"><div id="search-results-list"></div></div>
+    </div>
+  </div>
+</header>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav-overlay" id="mobile-overlay" aria-hidden="true"></div>
+<nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation" aria-hidden="true">
+  <div class="mobile-nav-header">
+    <img src="assets/images/logo.jpeg" alt="IBH" class="mobile-logo" />
+    <button class="mobile-close" id="mobile-close" aria-label="Close menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="mobile-nav-list">
+    <a href="#" class="mobile-nav-link">Home</a>
+    <div class="mobile-nav-group">
+      <button class="mobile-nav-group-toggle">Perfume <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="mobile-nav-sub">
+        <a href="#" data-cat="perfume">All Perfumes</a>
+        <a href="#" data-cat="perfume" data-filter="gender:Male">Men&rsquo;s</a>
+        <a href="#" data-cat="perfume" data-filter="gender:Female">Women&rsquo;s</a>
+        <a href="#" data-cat="perfume" data-filter="gender:Unisex">Unisex</a>
+      </div>
+    </div>
+    <div class="mobile-nav-group">
+      <button class="mobile-nav-group-toggle">Hair Care <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="mobile-nav-sub">
+        <a href="#" data-cat="hair">All Hair Care</a>
+        <a href="#" data-cat="hair" data-filter="subcat:Shampoo">Shampoo</a>
+        <a href="#" data-cat="hair" data-filter="subcat:Conditioner">Conditioner</a>
+        <a href="#" data-cat="hair" data-filter="subcat:Styling">Styling</a>
+      </div>
+    </div>
+    <div class="mobile-nav-group">
+      <button class="mobile-nav-group-toggle">Body Care <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="mobile-nav-sub">
+        <a href="#" data-cat="body">All Body Care</a>
+        <a href="#" data-cat="body" data-filter="subcat:Body Lotion">Lotions</a>
+        <a href="#" data-cat="body" data-filter="subcat:Body Wash">Body Wash</a>
+        <a href="#" data-cat="body" data-filter="subcat:Body Scrub">Scrubs</a>
+      </div>
+    </div>
+    <a href="#" class="mobile-nav-link" data-action="show-brands">Brands</a>
+    <a href="#why-ibh" class="mobile-nav-link">About</a>
+  </div>
+  <div class="mobile-nav-footer">
+    <a href="#" class="mobile-social" aria-label="WhatsApp">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    </a>
+    <a href="#" class="mobile-social" aria-label="Instagram">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main-content">
+
+  <!-- HERO -->
+  <section id="hero" aria-labelledby="hero-title">
+    <div class="hero-bg" id="hero-bg" aria-hidden="true">
+      <video class="hero-bg-video" id="hero-bg-video" autoplay muted loop playsinline></video>
+      <img  class="hero-bg-img"   id="hero-bg-img"   alt="">
+    </div>
+    <div class="hero-bg-overlay" aria-hidden="true"></div>
+
+    <div class="container hero-inner">
+      <div class="hero-content">
+        <div class="hero-eyebrow">
+          <span class="hero-badge">New Collection</span>
+          Premium Beauty &amp; Fragrances
+        </div>
+        <h1 class="hero-title" id="hero-title">
+          Discover Your<br><em>Signature</em> Scent
+        </h1>
+        <p class="hero-subtitle">
+          Explore 500+ premium products from 80+ world-class brands.
+          From luxury perfumes to professional hair care &mdash; all at competitive prices.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-gold btn-lg" data-action="shop-all">
+            Shop Collection
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+          <button class="btn btn-ghost-white btn-lg" data-action="show-brands">
+            Explore Brands
+          </button>
+        </div>
+        <div class="hero-stats" aria-label="Key facts">
+          <div class="hero-stat"><span class="hero-stat-num">500+</span><span class="hero-stat-label">Products</span></div>
+          <div class="hero-stat-divider" aria-hidden="true"></div>
+          <div class="hero-stat"><span class="hero-stat-num">80+</span><span class="hero-stat-label">Brands</span></div>
+          <div class="hero-stat-divider" aria-hidden="true"></div>
+          <div class="hero-stat"><span class="hero-stat-num">3</span><span class="hero-stat-label">Stores</span></div>
+          <div class="hero-stat-divider" aria-hidden="true"></div>
+          <div class="hero-stat"><span class="hero-stat-num">4.9&#9733;</span><span class="hero-stat-label">Rating</span></div>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+        <div class="hero-orb hero-orb-3"></div>
+        <div class="hero-center-icon"><span>&#10024;</span></div>
+        <div class="hero-float-card hero-float-1">
+          <span class="hero-float-emoji">&#127800;</span>
+          <div><div class="hero-float-name">Chanel No.5</div><div class="hero-float-brand">Chanel</div></div>
+        </div>
+        <div class="hero-float-card hero-float-2">
+          <span class="hero-float-emoji">&#127754;</span>
+          <div><div class="hero-float-name">Sauvage EDT</div><div class="hero-float-brand">Dior</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-scroll-hint" aria-hidden="true">
+      <span class="hero-scroll-text">Scroll</span>
+      <div class="hero-scroll-line"><div class="hero-scroll-dot"></div></div>
+    </div>
+
+    <div class="hero-wave" aria-hidden="true">
+      <svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="M0,60 C480,100 960,0 1440,60 L1440,100 L0,100 Z" fill="var(--white)"/></svg>
+    </div>
+  </section>
+
+  <!-- BRANDS TICKER -->
+  <section id="brands-section" class="brands-section section-sm" aria-label="Brand partners">
+    <div class="container"><p class="brands-label">Our Brands</p></div>
+    <div class="brands-ticker-wrap">
+      <div class="brands-ticker">
+        <span>Chanel</span><span>Dior</span><span>Tom Ford</span><span>Versace</span>
+        <span>Gucci</span><span>YSL</span><span>Armani</span><span>Ajmal</span>
+        <span>Rasasi</span><span>OGX</span><span>Shea Moisture</span><span>Cantu</span>
+        <span>Pantene</span><span>Nivea</span><span>Dove</span><span>The Body Shop</span><span>Vaseline</span>
+        <span>Chanel</span><span>Dior</span><span>Tom Ford</span><span>Versace</span>
+        <span>Gucci</span><span>YSL</span><span>Armani</span><span>Ajmal</span>
+        <span>Rasasi</span><span>OGX</span><span>Shea Moisture</span><span>Cantu</span>
+        <span>Pantene</span><span>Nivea</span><span>Dove</span><span>The Body Shop</span><span>Vaseline</span>
+      </div>
+    </div>
+    </video>
+  </section>
+
+  <!-- NEW ARRIVALS -->
+  <section id="new-arrivals" class="section" aria-labelledby="new-arrivals-h">
+    <div class="container">
+      <div class="sec-header">
+        <p class="sec-eyebrow">Just Arrived</p>
+        <h2 class="sec-title" id="new-arrivals-h">New Arrivals</h2>
+        <p class="sec-sub">Fresh picks from the world&rsquo;s top beauty brands</p>
+      </div>
+      <div class="products-grid" id="new-arrivals-grid" aria-live="polite"></div>
+      <div class="section-footer">
+        <button class="btn btn-outline" data-action="shop-all">View All Products</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE STRIP
+   move this section to About US page.
+  <section class="feature-strip section-sm" aria-label="Our commitments">
+    <div class="container">
+      <div class="feature-strip-grid">
+        <div class="feature-item">
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+          <div class="feature-text"><strong>Fast Delivery</strong><span>Nairobi same-day delivery</span></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="feature-text"><strong>100% Authentic</strong><span>Certified genuine products</span></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div class="feature-text"><strong>3 Store Locations</strong><span>Visit us in Nairobi</span></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="feature-text"><strong>Easy Returns</strong><span>Noreturn policy</span></div>
+        </div>
+      </div>
+    </div>
+  </section> -->
+
+  <!-- TRENDING -->
+  <section id="trending" class="section" style="background:var(--n-50)" aria-labelledby="trending-h">
+    <div class="container">
+      <div class="sec-header">
+        <p class="sec-eyebrow">What&rsquo;s Hot</p>
+        <h2 class="sec-title" id="trending-h">Trending Now</h2>
+        <p class="sec-sub">The most loved products this season</p>
+      </div>
+      <div class="filter-tabs" id="trending-filter-tabs" role="tablist" aria-label="Filter trending">
+        <button class="filter-tab active" data-filter="all"     role="tab" aria-selected="true">All</button>
+        <button class="filter-tab"        data-filter="perfume" role="tab">Perfume</button>
+        <button class="filter-tab"        data-filter="hair"    role="tab">Hair Care</button>
+        <button class="filter-tab"        data-filter="body"    role="tab">Body Care</button>
+      </div>
+      <div class="products-grid" id="trending-grid" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- BEST SELLERS -->
+  <section id="most-sell" class="section" aria-labelledby="most-sell-h">
+    <div class="container">
+      <div class="sec-header">
+        <p class="sec-eyebrow">Customer Favourites</p>
+        <h2 class="sec-title" id="most-sell-h">Best Sellers</h2>
+        <p class="sec-sub">Our most purchased products — loved by thousands</p>
+      </div>
+      <div class="filter-tabs" id="most-sell-filter-tabs" role="tablist" aria-label="Filter best sellers">
+        <button class="filter-tab active" data-filter="all"     role="tab" aria-selected="true">All</button>
+        <button class="filter-tab"        data-filter="perfume" role="tab">Perfume</button>
+        <button class="filter-tab"        data-filter="hair"    role="tab">Hair Care</button>
+        <button class="filter-tab"        data-filter="body"    role="tab">Body Care</button>
+      </div>
+      <div class="products-grid" id="most-sell-grid" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- WHY IBH -->
+  <section id="why-ibh" class="why-section section" aria-labelledby="why-h">
+    <div class="container">
+      <div class="why-inner">
+        <div class="why-content">
+          <p class="sec-eyebrow">Why Choose Us</p>
+          <h2 class="sec-title" id="why-h" style="text-align:left">The IBH Difference</h2>
+          <p class="why-desc">We curate the finest beauty products with a commitment to authenticity, quality, and customer satisfaction.</p>
+          <ul class="why-list">
+            <li>
+              <span class="why-check" aria-hidden="true">&#10003;</span>
+              <div><strong>Expert Curation</strong><p>Every product selected by our beauty experts</p></div>
+            </li>
+            <li>
+              <span class="why-check" aria-hidden="true">&#10003;</span>
+              <div><strong>Competitive Pricing</strong><p>Best prices with regular promotions</p></div>
+            </li>
+            <li>
+              <span class="why-check" aria-hidden="true">&#10003;</span>
+              <div><strong>Multiple Payment Options</strong><p>M-PESA, card, and pay in-store</p></div>
+            </li>
+            <li>
+              <span class="why-check" aria-hidden="true">&#10003;</span>
+              <div><strong>Loyalty Rewards</strong><p>Earn points on every purchase</p></div>
+            </li>
+          </ul>
+          <button class="btn btn-primary btn-lg" data-action="shop-all">
+            Shop Now
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <div class="why-cards" aria-hidden="true">
+          <div class="why-card why-card-main"><div class="why-card-number">500+</div><div class="why-card-label">Premium Products</div></div>
+          <div class="why-card why-card-gold"><div class="why-card-number">80+</div><div class="why-card-label">Global Brands</div></div>
+          <div class="why-card why-card-dark"><div class="why-card-number">10k+</div><div class="why-card-label">Happy Customers</div></div>
+          <div class="why-card why-card-outline"><div class="why-card-number">3</div><div class="why-card-label">Store Locations</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BRANDS PAGE -->
+  <section id="brands-page" class="section" hidden aria-labelledby="brands-page-h">
+    <div class="container">
+      <div class="shop-header">
+        <div>
+          <p class="sec-eyebrow">All Brands</p>
+          <h2 class="sec-title" id="brands-page-h">Our Brands</h2>
+        </div>
+        <button class="btn btn-ghost" id="brands-back">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Home
+        </button>
+      </div>
+      <div class="brands-grid" id="brands-grid" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- SHOP (dynamic) -->
+  <section id="shop" class="section" hidden aria-labelledby="shop-h">
+    <div class="container">
+      <div class="shop-header">
+        <div>
+          <p class="sec-eyebrow" id="shop-label">Shop</p>
+          <h2 class="sec-title" id="shop-h">Products</h2>
+        </div>
+        <button class="btn btn-ghost" id="shop-back">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Home
+        </button>
+      </div>
+      <div class="products-grid" id="shop-grid" aria-live="polite"></div>
+      <div id="shop-empty" hidden>
+        <div class="empty-state">
+          <span class="empty-icon">&#128269;</span>
+          <h3>No products found</h3>
+          <p>Try adjusting your search or filters</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer id="footer" role="contentinfo">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="assets/images/logo.jpeg" alt="Inspiring Beauty Hub" class="footer-logo" />
+      <p class="footer-desc">Your destination for premium fragrances, hair care, and body care. Serving Nairobi with a passion for beauty.</p>
+      <div class="footer-socials">
+        <a href="#" class="footer-social" aria-label="WhatsApp">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </a>
+        <a href="#" class="footer-social" aria-label="Instagram">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        </a>
+        <a href="#" class="footer-social" aria-label="TikTok">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h3 class="footer-heading">Our Branches</h3>
+      <ul>
+        <li class="footer-location">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <div><strong>Eastleigh Branch</strong><span>+254 700 000 001</span></div>
+        </li>
+        <li class="footer-location">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <div><strong>CBD Branch</strong><span>+254 700 000 002</span></div>
+        </li>
+        <li class="footer-location">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <div><strong>Westlands Branch</strong><span>+254 700 000 003</span></div>
+        </li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h3 class="footer-heading">Quick Links</h3>
+      <ul class="footer-links">
+        <li><a href="#" data-cat="perfume">Perfume</a></li>
+        <li><a href="#" data-cat="hair">Hair Care</a></li>
+        <li><a href="#" data-cat="body">Body Care</a></li>
+        <li><a href="#new-arrivals">New Arrivals</a></li>
+        <li><a href="#trending">Trending</a></li>
+        <li><a href="#why-ibh">About Us</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h3 class="footer-heading">Store Hours</h3>
+      <ul class="footer-hours">
+        <li><span>Mon &ndash; Fri</span><strong>8:00 AM &ndash; 8:00 PM</strong></li>
+        <li><span>Saturday</span><strong>9:00 AM &ndash; 7:00 PM</strong></li>
+        <li><span>Sunday</span><strong>10:00 AM &ndash; 6:00 PM</strong></li>
+      </ul>
+      <div class="footer-contact">
+        <a href="mailto:info@ibh.co.ke" class="footer-contact-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          info@ibh.co.ke
+        </a>
+        <a href="tel:+254700000000" class="footer-contact-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          +254 700 000 000
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="container footer-bottom-inner">
+      <p>&copy; 2025 Inspiring Beauty Hub. All rights reserved.</p>
+      <div class="footer-legal">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms</a>
+        <a href="#">Returns</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- CART DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="cart-drawer" id="cart-drawer" role="dialog" aria-label="Shopping cart" aria-hidden="true">
+  <div class="cart-drawer-header">
+    <h2 class="cart-drawer-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      Cart <span class="cart-count-badge" id="cart-drawer-count">0</span>
+    </h2>
+    <button class="drawer-close" id="cart-close" aria-label="Close cart">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="cart-drawer-body" id="cart-items" aria-live="polite"></div>
+  <div class="cart-drawer-footer" id="cart-footer"></div>
+</aside>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="product-overlay">
+  <div class="modal" id="product-modal" role="dialog" aria-label="Product details" aria-hidden="true">
+    <button class="modal-close" id="product-modal-close" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="modal-body" id="product-modal-body"></div>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay" id="checkout-overlay">
+  <div class="modal modal-wide" id="checkout-modal" role="dialog" aria-label="Checkout" aria-hidden="true">
+    <button class="modal-close" id="checkout-modal-close" aria-label="Close checkout">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="modal-body" id="checkout-modal-body"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-overlay" id="admin-overlay"></div>
+<div class="admin-panel" id="admin-panel" role="dialog" aria-label="Admin dashboard" aria-hidden="true">
+  <div class="admin-header">
+    <div class="admin-header-left">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <h2>Admin Dashboard</h2>
+    </div>
+    <button class="admin-close" id="admin-close" aria-label="Close admin">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="admin-body">
+    <div class="admin-sidebar">
+      <nav class="admin-tabs" role="tablist" aria-label="Admin sections">
+        <button class="admin-tab active" data-tab="orders"      role="tab" aria-selected="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Orders
+        </button>
+        <button class="admin-tab" data-tab="products" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          Products
+        </button>
+        <button class="admin-tab" data-tab="brands" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Brands
+        </button>
+        <button class="admin-tab" data-tab="categories" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Categories
+        </button>
+        <button class="admin-tab" data-tab="add-product" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Product
+        </button>
+        <button class="admin-tab" data-tab="settings" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </button>
+      </nav>
+    </div>
+    <div class="admin-content" id="admin-content" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true" role="status"></div>
+
+<!-- Google Identity Services (for Google Sign-In in checkout) -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- SCRIPTS (load order matters) -->
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/api.js"></script>
+<script src="js/products.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/checkout.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
