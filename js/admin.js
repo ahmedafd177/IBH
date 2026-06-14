@@ -9,6 +9,7 @@ const Admin = (() => {
   let _orderSearch = '';
   let _orderStatus = '';
   let _orderDate   = '';
+  let _productSearch = '';
 
   /* ─── open / close (index.html overlay; not used in admin.html) ─── */
   async function open() {
@@ -83,8 +84,8 @@ const Admin = (() => {
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead><tr>
-              <th>Order ID</th><th>Customer</th><th>Items</th>
-              <th>Total</th><th>Payment</th><th>Status</th><th>Update</th><th>Invoice</th>
+              <th>#</th><th>Order ID</th><th>Customer</th><th>Items</th>
+              <th>Total</th><th>Payment</th><th>Status</th><th>Update</th><th>Actions</th>
             </tr></thead>
             <tbody id="orders-tbody">
               ${buildOrdersRows(orders)}
@@ -95,16 +96,29 @@ const Admin = (() => {
   }
 
   function buildOrdersRows(orders) {
-    if (!orders.length) return `<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:var(--n-400)">No orders match the current filters.</td></tr>`;
-    return orders.map(o => `
+    if (!orders.length) return `<tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--n-400)">No orders match the current filters.</td></tr>`;
+    return orders.map((o, idx) => `
       <tr>
-        <td><strong style="color:var(--blue)">${o.id}</strong><br>
-          <span style="font-size:.7rem;color:var(--n-400)">${o.date} ${o.time || ''}</span></td>
-        <td>${o.customer?.name || o.customer || '—'}<br>
-          <span style="font-size:.7rem;color:var(--n-400)">${o.customer?.phone || ''}</span></td>
-        <td>${o.items?.length || 0} item${(o.items?.length || 0) !== 1 ? 's' : ''}</td>
+        <td style="color:var(--n-400);font-size:.75rem;font-weight:600">${idx + 1}</td>
+        <td>
+          <strong style="color:var(--blue);font-size:.8125rem">${o.id}</strong><br>
+          <span style="font-size:.6875rem;color:var(--n-400)">${o.date} ${o.time || ''}</span>
+        </td>
+        <td>
+          <strong style="font-size:.8125rem">${o.customer?.name || o.customer || '—'}</strong><br>
+          <span style="font-size:.6875rem;color:var(--n-400)">${o.customer?.phone || ''}</span>
+          ${o.customer?.zone ? `<br><span style="font-size:.6rem;color:var(--n-400)">${o.customer.zone}</span>` : ''}
+        </td>
+        <td>
+          <span class="pill pill-processing" style="font-size:.6rem">${o.items?.length || 0} item${(o.items?.length || 0) !== 1 ? 's' : ''}</span>
+          <button class="admin-btn btn-sm" data-view-order="${o.id}"
+            style="margin-left:.25rem;background:var(--blue-xl);color:var(--blue)">View</button>
+        </td>
         <td><strong>KES ${(o.total || 0).toLocaleString()}</strong></td>
-        <td><span style="text-transform:uppercase;font-size:.6875rem;font-weight:600">${o.payment || '—'}</span></td>
+        <td>
+          <span class="pill ${o.payment === 'mpesa' ? 'pill-confirmed' : o.payment === 'cod' ? 'pill-pending' : 'pill-processing'}"
+            style="font-size:.6rem;text-transform:uppercase">${o.payment || '—'}</span>
+        </td>
         <td><span class="pill pill-${o.status}">${o.status}</span></td>
         <td>
           <select class="status-select" data-order-id="${o.id}">
@@ -112,8 +126,8 @@ const Admin = (() => {
               .map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('')}
           </select>
         </td>
-        <td>
-          <button class="admin-btn admin-btn-primary" data-invoice="${o.id}" style="white-space:nowrap">🖨 Invoice</button>
+        <td style="white-space:nowrap">
+          <button class="admin-btn admin-btn-primary btn-sm" data-invoice="${o.id}">🖨 Print</button>
         </td>
       </tr>`).join('');
   }
@@ -135,34 +149,51 @@ const Admin = (() => {
      PRODUCTS
   ═══════════════════════════ */
   async function buildProducts() {
-    const ps = await API.getProducts({ admin: true });
+    const allPs = await API.getProducts({ admin: true });
+    const ps = _productSearch
+      ? allPs.filter(p =>
+          p.name.toLowerCase().includes(_productSearch.toLowerCase()) ||
+          p.brand.toLowerCase().includes(_productSearch.toLowerCase()) ||
+          p.subcat.toLowerCase().includes(_productSearch.toLowerCase())
+        )
+      : allPs;
+
     return `
       <div class="admin-card">
         <div class="admin-card-head">
-          <h4>Products (${ps.length})</h4>
+          <h4>Products <span style="color:var(--blue)">(${ps.length}${_productSearch ? ' of ' + allPs.length : ' total'})</span></h4>
           <button class="admin-btn admin-btn-primary" onclick="Admin.switchTab('add-product')">+ Add Product</button>
         </div>
+
+        <!-- Search Filter -->
+        <div class="product-filters" style="margin-bottom:1.25rem">
+          <input id="prod-search" class="product-filter-input" type="search" placeholder="Search by name, brand, or category…" value="${_productSearch}" style="flex:1;padding:0.75rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:0.875rem">
+          ${_productSearch ? `<button class="admin-btn" id="prod-clear" style="background:var(--err-bg);color:var(--err);margin-left:0.5rem">✕ Clear</button>` : ''}
+        </div>
+
         <div class="admin-table-wrap">
           <table class="admin-table">
-            <thead><tr><th>Image</th><th>Name</th><th>Brand</th><th>Category</th><th>Price</th><th>Stock</th><th>Visible</th><th>Actions</th></tr></thead>
+            <thead><tr><th>#</th><th>Image</th><th>Name</th><th>Brand</th><th>Category</th><th>Price</th><th>Stock</th><th>Visible</th><th>Actions</th></tr></thead>
             <tbody>
-              ${ps.map(p => `
+              ${ps.length ? ps.map((p, idx) => `
                 <tr>
+                  <td style="color:var(--n-400);font-size:.75rem;font-weight:600">${idx + 1}</td>
                   <td>${p.imageMain
                     ? `<img src="${p.imageMain}" alt="${p.name}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;">`
                     : `<span style="font-size:1.375rem">${p.emoji}</span>`}
                   </td>
                   <td><strong>${p.name}</strong><br><span style="font-size:.7rem;color:var(--n-400)">${p.gender}</span></td>
                   <td>${p.brand}</td>
-                  <td>${p.subcat}</td>
+                  <td><span class="pill pill-processing" style="font-size:.6rem">${p.subcat}</span></td>
                   <td>KES ${p.price.toLocaleString()}${p.oldPrice ? `<br><span style="font-size:.7rem;color:var(--n-400);text-decoration:line-through">KES ${p.oldPrice.toLocaleString()}</span>` : ''}</td>
-                  <td>${p.stock}</td>
+                  <td><span class="pill ${p.stock > 0 ? 'pill-confirmed' : 'pill-cancelled'}">${p.stock}</span></td>
                   <td><span class="pill ${p.isVisible !== false ? 'pill-confirmed' : 'pill-cancelled'}">${p.isVisible !== false ? 'Yes' : 'Hidden'}</span></td>
                   <td style="white-space:nowrap">
-                    <button class="admin-btn admin-btn-primary" data-edit-product="${p.id}" style="margin-right:.375rem">Edit</button>
-                    <button class="admin-btn admin-btn-danger" data-del-product="${p.id}">Delete</button>
+                    <button class="admin-btn admin-btn-primary btn-sm" data-edit-product="${p.id}" style="margin-right:.375rem">Edit</button>
+                    <button class="admin-btn admin-btn-danger btn-sm" data-del-product="${p.id}">Delete</button>
                   </td>
-                </tr>`).join('')}
+                </tr>`).join('')
+              : `<tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--n-400)">No products match "${_productSearch}"</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -252,21 +283,66 @@ const Admin = (() => {
   /* ═══════════════════════════
      CATEGORIES
   ═══════════════════════════ */
-  async function buildCategories() {
-    const cats = API.getCategories();
+  const _mainCatEmoji = { perfume: '🌸', hair: '💆', body: '🧴' };
+
+  function buildMainCatCard(mc) {
     return `
+      <div class="brand-admin-card" data-main-cat-id="${mc.id}" data-main-cat-slug="${mc.slug}">
+        <div class="brand-admin-img" style="background:var(--blue-xl)">
+          ${mc.image
+            ? `<img src="${mc.image}" alt="${mc.name}" style="width:100%;height:100%;object-fit:contain;border-radius:8px;">`
+            : `<span style="font-size:2rem">${_mainCatEmoji[mc.slug] || mc.name[0]}</span>`}
+        </div>
+        <div class="brand-admin-name">${mc.name}</div>
+        <div class="brand-admin-actions">
+          <button class="admin-btn admin-btn-primary btn-sm" data-edit-main-cat="${mc.id}">Edit Logo</button>
+        </div>
+      </div>`;
+  }
+
+  async function buildCategories() {
+    const [mainCats, raw] = await Promise.all([
+      API.getMainCategoriesAsync(),
+      API.getCategoriesAsync(),
+    ]);
+    const cats = raw.map(c => typeof c === 'string' ? { id: null, name: c } : c);
+    return `
+      <!-- Main Categories -->
+      <div class="admin-card" style="margin-bottom:1.25rem">
+        <div class="admin-card-head">
+          <h4>Main Categories (3)</h4>
+          <span style="font-size:.75rem;color:var(--n-400)">Upload logo for each main category</span>
+        </div>
+        <div class="brand-admin-grid" id="main-cats-grid">
+          ${mainCats.map(mc => buildMainCatCard(mc)).join('')}
+        </div>
+      </div>
+
+      <!-- Subcategories -->
       <div class="admin-card">
         <div class="admin-card-head">
-          <h4>Categories (${cats.length})</h4>
-          <button class="admin-btn admin-btn-primary" id="add-cat-btn">+ Add Category</button>
+          <h4>Subcategories (${cats.length})</h4>
         </div>
-        <div class="chips-wrap" id="cats-chips">
-          ${cats.map(c => `
-            <div class="chip">
-              <span class="chip-label">${c}</span>
-              <button class="chip-action chip-edit" data-edit-cat="${c}" title="Rename" style="color:var(--blue);margin-left:.25rem">✎</button>
-              <button class="chip-del" data-del-cat="${c}" title="Delete">×</button>
-            </div>`).join('')}
+
+        <div style="display:flex;gap:.625rem;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap">
+          <input id="new-cat-name" type="text" placeholder="New subcategory name…"
+            style="flex:1;min-width:180px;border:1.5px solid var(--n-200);border-radius:var(--r-md);padding:.5rem .75rem;font-size:.875rem;outline:none;color:var(--n-900)">
+          <button class="admin-btn admin-btn-success" id="add-cat-btn">+ Add Subcategory</button>
+        </div>
+
+        <div class="brand-admin-grid" id="cats-grid">
+          ${cats.length ? cats.map(c => `
+            <div class="brand-admin-card" data-cat-id="${c.id || ''}" data-cat-name="${c.name}">
+              <div class="brand-admin-img" style="background:var(--blue-xl)">
+                <span style="font-size:1.25rem;font-weight:800;color:var(--blue)">${c.name[0].toUpperCase()}</span>
+              </div>
+              <div class="brand-admin-name">${c.name}</div>
+              <div class="brand-admin-actions">
+                <button class="admin-btn admin-btn-primary btn-sm" data-edit-cat="${c.name}">Edit</button>
+                <button class="admin-btn admin-btn-danger btn-sm" data-del-cat="${c.id || c.name}">Delete</button>
+              </div>
+            </div>`).join('')
+          : `<p style="color:var(--n-400);font-size:.875rem;grid-column:1/-1">No subcategories yet. Add one above.</p>`}
         </div>
       </div>`;
   }
@@ -275,8 +351,9 @@ const Admin = (() => {
      ADD / EDIT PRODUCT
   ═══════════════════════════ */
   async function buildAddProduct(prefill = null) {
-    const brands = await API.getBrandsAsync();
-    const cats   = API.getCategories();
+    const brands  = await API.getBrandsAsync();
+    const rawCats = await API.getCategoriesAsync();
+    const cats    = rawCats.map(c => typeof c === 'string' ? c : c.name);
     const v      = key => prefill ? (prefill[key] ?? '') : '';
     const checked = key => prefill?.[key] ? 'checked' : '';
     const selBrand = brands.map(b =>
@@ -398,22 +475,57 @@ const Admin = (() => {
         <div class="admin-stat"><div class="admin-stat-icon">💰</div><div class="admin-stat-num">KES ${totalRevenue.toLocaleString()}</div><div class="admin-stat-label">Revenue</div></div>
         <div class="admin-stat"><div class="admin-stat-icon">🧾</div><div class="admin-stat-num">KES ${avgOrderValue.toLocaleString()}</div><div class="admin-stat-label">Avg Order</div></div>
       </div>
+
+      <!-- Create new user -->
+      <div class="admin-card" style="margin-bottom:1.25rem">
+        <div class="admin-card-head"><h4>Create Admin / Staff User</h4></div>
+        <div class="form-row">
+          <div class="form-group" style="margin:0"><label>Full Name</label><input id="nu-name" type="text" placeholder="Jane Wanjiku"></div>
+          <div class="form-group" style="margin:0"><label>Phone</label><input id="nu-phone" type="tel" placeholder="0700000000"></div>
+        </div>
+        <div class="form-row" style="margin-top:.625rem">
+          <div class="form-group" style="margin:0"><label>Email</label><input id="nu-email" type="email" placeholder="jane@ibh.co.ke"></div>
+          <div class="form-group" style="margin:0">
+            <label>Role</label>
+            <select id="nu-role">
+              <option value="customer">Customer</option>
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <button class="admin-btn admin-btn-success" id="create-user-btn" style="margin-top:.75rem">+ Create User</button>
+      </div>
+
       <div class="admin-card">
-        <div class="admin-card-head"><h4>Customers (${users.length})</h4></div>
+        <div class="admin-card-head">
+          <h4>Customers <span style="color:var(--blue)">(${users.length})</span></h4>
+          <input id="user-search" type="search" placeholder="Search name, phone…"
+            style="padding:.4rem .75rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem;outline:none;width:200px">
+        </div>
         <div class="admin-table-wrap">
           <table class="admin-table">
-            <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Orders</th><th>Total Spent</th><th>Last Order</th></tr></thead>
-            <tbody>
-              ${users.length ? users.map(u => `
-                <tr>
+            <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Role</th><th>Orders</th><th>Total Spent</th><th>Last Order</th><th>Actions</th></tr></thead>
+            <tbody id="users-tbody">
+              ${users.length ? users.map((u, i) => `
+                <tr data-user-id="${u.id}" data-user-phone="${u.phone}">
+                  <td style="color:var(--n-400);font-size:.75rem">${i + 1}</td>
                   <td><strong>${u.name}</strong></td>
                   <td>${u.phone}</td>
-                  <td>${u.email || <span style="color:var(--n-400)">—</span>}</td>
+                  <td>${u.email || '<span style="color:var(--n-400)">—</span>'}</td>
+                  <td>
+                    <span class="pill pill-${u.role === 'admin' ? 'confirmed' : u.role === 'staff' ? 'pending' : 'cancelled'}"
+                      style="text-transform:capitalize">${u.role || 'customer'}</span>
+                  </td>
                   <td><span class="pill pill-confirmed">${u.orderCount}</span></td>
                   <td><strong>KES ${u.totalSpent.toLocaleString()}</strong></td>
                   <td>${u.lastOrder || '—'}</td>
+                  <td style="display:flex;gap:.375rem;flex-wrap:wrap">
+                    <button class="admin-btn admin-btn-primary btn-sm" data-edit-user="${u.id}">Edit</button>
+                    <button class="admin-btn admin-btn-danger btn-sm"  data-del-user="${u.id}">Delete</button>
+                  </td>
                 </tr>`).join('')
-              : `<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--n-400)">No customers yet. Orders will appear here.</td></tr>`}
+              : `<tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--n-400)">No users yet. Create one above.</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -424,23 +536,64 @@ const Admin = (() => {
      SETTINGS
   ═══════════════════════════ */
   function buildSettings() {
-    const heroBg = localStorage.getItem('ibh_hero_bg') || '';
+    const heroBg   = localStorage.getItem('ibh_hero_bg')   || '';
+    const heroLogo = localStorage.getItem('ibh_hero_logo') || '';
     return `
-      <div class="admin-card">
+      <div class="admin-card" style="margin-bottom:1.25rem">
         <div class="admin-card-head"><h4>Hero Section Background</h4></div>
         <div class="form-group">
-          <label>Background Image or Video URL</label>
+          <label>Background Image or Video</label>
           <div class="img-upload-group">
             <input id="hero-bg-url" type="url" value="${heroBg}" placeholder="https://… (.jpg, .png, .mp4, .webm)">
             <label class="img-upload-file-btn">📎 Upload<input type="file" id="hero-bg-file" accept="image/*,video/*" hidden></label>
           </div>
           <div class="img-preview-wrap" id="hero-bg-preview" style="margin-top:.625rem"></div>
-          <p style="font-size:.75rem;color:var(--n-400);margin-top:.375rem">
-            Supports images (JPG, PNG, WebP) and videos (MP4, WebM). Leave blank for the default gradient.
-          </p>
+          <p style="font-size:.75rem;color:var(--n-400);margin-top:.375rem">Supports images (JPG, PNG, WebP) and videos (MP4, WebM). Leave blank for the default video.</p>
         </div>
-        <button class="admin-btn admin-btn-success" id="save-settings-btn" style="padding:.625rem 1.5rem">✓ Save</button>
-        ${heroBg ? `<button class="admin-btn admin-btn-danger" id="clear-settings-btn" style="padding:.625rem 1.5rem;margin-left:.5rem">✕ Remove</button>` : ''}
+        <div class="form-row" style="margin-top:.5rem">
+          <button class="admin-btn admin-btn-success" id="save-settings-btn" style="padding:.625rem 1.5rem">✓ Save Background</button>
+          ${heroBg ? `<button class="admin-btn admin-btn-danger" id="clear-settings-btn" style="padding:.625rem 1.5rem">✕ Reset to Default</button>` : ''}
+        </div>
+      </div>
+
+      <div class="admin-card" style="margin-bottom:1.25rem">
+        <div class="admin-card-head"><h4>Store Information</h4></div>
+        <div class="form-row">
+          <div class="form-group" style="margin:0">
+            <label>Store Name</label>
+            <input type="text" value="Inspiring Beauty Hub" placeholder="Store name">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Notification Bar Text</label>
+            <input type="text" value="Free delivery within Nairobi CBD — Shop now!" placeholder="Announcement text">
+          </div>
+        </div>
+        <div class="form-row" style="margin-top:.625rem">
+          <div class="form-group" style="margin:0">
+            <label>WhatsApp Number</label>
+            <input type="tel" placeholder="+254700000000">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Instagram Handle</label>
+            <input type="text" placeholder="@inspiringbeautyhub">
+          </div>
+        </div>
+        <button class="admin-btn admin-btn-success" style="margin-top:.75rem;padding:.625rem 1.5rem">✓ Save Info</button>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-head"><h4>M-Pesa &amp; Payment Settings</h4></div>
+        <div class="form-row">
+          <div class="form-group" style="margin:0">
+            <label>M-Pesa Till / Paybill Number</label>
+            <input type="text" id="mpesa-till" placeholder="123456" value="${window.Config?.MPESA_TILL || ''}">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>M-Pesa Business Name</label>
+            <input type="text" id="mpesa-name" placeholder="Inspiring Beauty Hub" value="${window.Config?.MPESA_NAME || ''}">
+          </div>
+        </div>
+        <button class="admin-btn admin-btn-success" id="save-mpesa-btn" style="margin-top:.75rem;padding:.625rem 1.5rem">✓ Save M-Pesa Settings</button>
       </div>`;
   }
 
@@ -621,6 +774,20 @@ const Admin = (() => {
 
     /* ── Products ── */
     if (tab === 'products') {
+      const searchIn = document.getElementById('prod-search');
+      const clearBtn = document.getElementById('prod-clear');
+
+      const refilter = async () => {
+        _productSearch = searchIn?.value || '';
+        switchTab('products');
+      };
+
+      searchIn?.addEventListener('input', refilter);
+      clearBtn?.addEventListener('click', () => {
+        _productSearch = '';
+        switchTab('products');
+      });
+
       c.querySelectorAll('[data-del-product]').forEach(btn => {
         btn.addEventListener('click', async () => {
           if (!confirm('Delete this product?')) return;
@@ -714,41 +881,111 @@ const Admin = (() => {
 
     /* ── Categories ── */
     if (tab === 'categories') {
-      document.getElementById('add-cat-btn')?.addEventListener('click', () => {
-        const name = prompt('Category name:');
-        if (!name?.trim()) return;
-        const cats = API.getCategories();
-        if (cats.includes(name)) { App.toast('Already exists', 'error'); return; }
-        cats.push(name); API.saveCategories(cats);
-        switchTab('categories'); App.toast(`Category added`, 'success');
-      });
+      const catInput = document.getElementById('new-cat-name');
 
-      c.querySelectorAll('.chip-edit').forEach(btn => {
+      const doAddCat = async () => {
+        const name = catInput?.value.trim();
+        if (!name) { App.toast('Enter a category name', 'error'); return; }
+        try {
+          await API.addCategory(name);
+          App.toast(`Category "${name}" added`, 'success');
+          App.refreshHome && App.refreshHome();
+          switchTab('categories');
+        } catch (e) {
+          App.toast(e.message || 'Already exists', 'error');
+        }
+      };
+
+      document.getElementById('add-cat-btn')?.addEventListener('click', doAddCat);
+      catInput?.addEventListener('keydown', e => { if (e.key === 'Enter') doAddCat(); });
+
+      c.querySelectorAll('[data-edit-cat]').forEach(btn => {
         btn.addEventListener('click', () => {
           const oldName = btn.dataset.editCat;
-          const chip    = btn.closest('.chip');
-          const label   = chip.querySelector('.chip-label');
-          if (chip.querySelector('.chip-rename-input')) return; // already editing
-          chip.innerHTML = `
-            <input class="chip-rename-input" value="${oldName}" style="border:1px solid var(--blue);border-radius:4px;padding:2px 6px;font-size:.8125rem;width:120px">
-            <button class="chip-action chip-save-edit" style="color:var(--ok);font-weight:700;margin-left:4px">✓</button>
-            <button class="chip-action chip-cancel-edit" style="color:var(--err);margin-left:2px">✕</button>`;
-          chip.querySelector('.chip-save-edit').addEventListener('click', async () => {
-            const newName = chip.querySelector('.chip-rename-input').value.trim();
+          const card    = btn.closest('.brand-admin-card');
+          if (!card) return;
+          card.innerHTML = `
+            <div class="form-group" style="margin-bottom:.5rem;width:100%">
+              <label>Name</label>
+              <input class="cat-rename-input" type="text" value="${oldName}"
+                style="width:100%;border:1.5px solid var(--blue);border-radius:var(--r-md);padding:.45rem .625rem;font-size:.8125rem;outline:none">
+            </div>
+            <div style="display:flex;gap:.375rem">
+              <button class="admin-btn admin-btn-success btn-sm cat-save-btn">✓ Save</button>
+              <button class="admin-btn btn-sm cat-cancel-btn">Cancel</button>
+            </div>`;
+          card.querySelector('.cat-save-btn').addEventListener('click', async () => {
+            const newName = card.querySelector('.cat-rename-input').value.trim();
             if (!newName || newName === oldName) { switchTab('categories'); return; }
             await API.updateCategory(oldName, newName);
-            App.toast(`Category renamed`, 'success');
-            App.refreshHome();
+            App.toast('Category renamed', 'success');
+            App.refreshHome && App.refreshHome();
             switchTab('categories');
           });
-          chip.querySelector('.chip-cancel-edit').addEventListener('click', () => switchTab('categories'));
+          card.querySelector('.cat-cancel-btn').addEventListener('click', () => switchTab('categories'));
         });
       });
 
       c.querySelectorAll('[data-del-cat]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const val = btn.dataset.delCat;
+          const card = btn.closest('[data-cat-name]');
+          const name = card?.dataset.catName || val;
+          if (!confirm(`Delete category "${name}"?`)) return;
+          if (!isNaN(val) && val !== '') {
+            await API.deleteCategory(name);
+          } else {
+            await API.deleteCategory(val);
+          }
+          App.toast('Category deleted');
+          App.refreshHome && App.refreshHome();
+          switchTab('categories');
+        });
+      });
+
+      /* ── Main Category logo edit ── */
+      c.querySelectorAll('[data-edit-main-cat]').forEach(btn => {
         btn.addEventListener('click', () => {
-          const cats = API.getCategories().filter(c => c !== btn.dataset.delCat);
-          API.saveCategories(cats); switchTab('categories');
+          const id   = btn.dataset.editMainCat;
+          const card = btn.closest('[data-main-cat-id]');
+          if (!card) return;
+          const slug = card.dataset.mainCatSlug;
+          const name = card.querySelector('.brand-admin-name')?.textContent || '';
+          card.innerHTML = `
+            <div class="form-group" style="margin-bottom:.5rem;width:100%">
+              <label>${name} Logo</label>
+              <div class="img-upload-group">
+                <input class="mc-img-url" type="url" placeholder="Paste URL…">
+                <label class="img-upload-file-btn">📎
+                  <input type="file" class="mc-img-file" accept="image/*" hidden>
+                </label>
+              </div>
+              <div class="img-preview-wrap mc-img-preview"></div>
+            </div>
+            <div style="display:flex;gap:.375rem">
+              <button class="admin-btn admin-btn-success btn-sm mc-save-btn">✓ Save</button>
+              <button class="admin-btn btn-sm mc-cancel-btn">Cancel</button>
+            </div>`;
+          const urlIn   = card.querySelector('.mc-img-url');
+          const fileIn  = card.querySelector('.mc-img-file');
+          const preview = card.querySelector('.mc-img-preview');
+          urlIn.addEventListener('input', () => {
+            const v = urlIn.value.trim();
+            preview.innerHTML = v ? `<img src="${v}" style="max-height:60px;border-radius:6px">` : '';
+          });
+          fileIn.addEventListener('change', async () => {
+            if (!fileIn.files[0]) return;
+            const url = await API.uploadImage(fileIn.files[0]);
+            urlIn.value = url;
+            preview.innerHTML = `<img src="${url}" style="max-height:60px;border-radius:6px">`;
+          });
+          card.querySelector('.mc-save-btn').addEventListener('click', async () => {
+            const image = urlIn.value.trim() || null;
+            await API.updateMainCategory(id, { image });
+            App.toast(`${name} logo updated`, 'success');
+            switchTab('categories');
+          });
+          card.querySelector('.mc-cancel-btn').addEventListener('click', () => switchTab('categories'));
         });
       });
     }
@@ -803,13 +1040,107 @@ const Admin = (() => {
       });
     }
 
+    /* ── Users ── */
+    if (tab === 'users') {
+      /* Search filter */
+      document.getElementById('user-search')?.addEventListener('input', e => {
+        const q = e.target.value.toLowerCase();
+        document.querySelectorAll('#users-tbody tr').forEach(row => {
+          row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+      });
+
+      /* Create user */
+      document.getElementById('create-user-btn')?.addEventListener('click', async () => {
+        const name  = document.getElementById('nu-name').value.trim();
+        const phone = document.getElementById('nu-phone').value.trim();
+        const email = document.getElementById('nu-email').value.trim();
+        const role  = document.getElementById('nu-role').value;
+        if (!name || !phone) { App.toast('Name and phone required', 'error'); return; }
+        try {
+          await API.createUser({ name, phone, email, role });
+          App.toast(`User "${name}" created`, 'success');
+          switchTab('users');
+        } catch (e) {
+          App.toast(e.message || 'User already exists', 'error');
+        }
+      });
+
+      /* Edit user — inline row form */
+      c.querySelectorAll('[data-edit-user]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id  = btn.dataset.editUser;
+          const row = btn.closest('tr');
+          if (!row) return;
+          const name  = row.querySelector('td:nth-child(2)')?.textContent.trim() || '';
+          const phone = row.dataset.userPhone || '';
+          const email = row.querySelector('td:nth-child(4)')?.textContent.trim().replace('—','') || '';
+          const role  = row.querySelector('.pill')?.textContent.trim().toLowerCase() || 'customer';
+          row.innerHTML = `
+            <td colspan="9">
+              <div style="display:flex;gap:.625rem;align-items:flex-end;flex-wrap:wrap;padding:.5rem 0">
+                <div class="form-group" style="margin:0;min-width:140px">
+                  <label>Name</label>
+                  <input class="eu-name" type="text" value="${name}" style="width:100%;padding:.4rem .625rem;border:1.5px solid var(--blue);border-radius:var(--r-md);font-size:.8125rem;outline:none">
+                </div>
+                <div class="form-group" style="margin:0;min-width:160px">
+                  <label>Email</label>
+                  <input class="eu-email" type="email" value="${email}" style="width:100%;padding:.4rem .625rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem;outline:none">
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label>Role</label>
+                  <select class="eu-role" style="padding:.4rem .625rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem">
+                    <option value="customer" ${role==='customer'?'selected':''}>Customer</option>
+                    <option value="staff"    ${role==='staff'   ?'selected':''}>Staff</option>
+                    <option value="admin"    ${role==='admin'   ?'selected':''}>Admin</option>
+                  </select>
+                </div>
+                <div style="display:flex;gap:.375rem">
+                  <button class="admin-btn admin-btn-success btn-sm eu-save-btn">✓ Save</button>
+                  <button class="admin-btn btn-sm eu-cancel-btn">Cancel</button>
+                </div>
+                <span style="font-size:.75rem;color:var(--n-400);align-self:center">${phone}</span>
+              </div>
+            </td>`;
+          row.querySelector('.eu-save-btn').addEventListener('click', async () => {
+            try {
+              await API.updateUserRole(id, row.querySelector('.eu-role').value, {
+                name:  row.querySelector('.eu-name').value.trim(),
+                email: row.querySelector('.eu-email').value.trim(),
+              });
+              App.toast('User updated', 'success');
+              switchTab('users');
+            } catch { App.toast('Update failed', 'error'); }
+          });
+          row.querySelector('.eu-cancel-btn').addEventListener('click', () => switchTab('users'));
+        });
+      });
+
+      /* Delete user */
+      c.querySelectorAll('[data-del-user]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id   = btn.dataset.delUser;
+          const name = btn.closest('tr')?.querySelector('td:nth-child(2)')?.textContent.trim() || id;
+          if (!confirm(`Delete user "${name}"?`)) return;
+          try {
+            await API.deleteUser(id);
+            App.toast('User deleted');
+            switchTab('users');
+          } catch { App.toast('Delete failed', 'error'); }
+        });
+      });
+    }
+
     /* ── Settings ── */
     if (tab === 'settings') {
       setupImageInput('hero-bg-url', 'hero-bg-file', 'hero-bg-preview');
+      setupImageInput('hero-logo-url', 'hero-logo-file', 'hero-logo-preview');
 
       document.getElementById('save-settings-btn')?.addEventListener('click', () => {
-        const url = document.getElementById('hero-bg-url').value.trim();
-        localStorage.setItem('ibh_hero_bg', url);
+        const url  = document.getElementById('hero-bg-url').value.trim();
+        const logo = document.getElementById('hero-logo-url')?.value.trim();
+        if (url) localStorage.setItem('ibh_hero_bg', url);
+        if (logo) localStorage.setItem('ibh_hero_logo', logo);
         App.applyHeroBg();
         App.toast('Settings saved', 'success');
         switchTab('settings');
@@ -817,9 +1148,18 @@ const Admin = (() => {
 
       document.getElementById('clear-settings-btn')?.addEventListener('click', () => {
         localStorage.removeItem('ibh_hero_bg');
+        localStorage.removeItem('ibh_hero_logo');
         App.applyHeroBg();
         App.toast('Background removed');
         switchTab('settings');
+      });
+
+      document.getElementById('save-mpesa-btn')?.addEventListener('click', () => {
+        const till = document.getElementById('mpesa-till')?.value.trim();
+        const name = document.getElementById('mpesa-name')?.value.trim();
+        if (till) localStorage.setItem('ibh_mpesa_till', till);
+        if (name) localStorage.setItem('ibh_mpesa_name', name);
+        App.toast('M-Pesa settings saved', 'success');
       });
     }
   }
@@ -827,7 +1167,7 @@ const Admin = (() => {
   /* ── Bind order table row events (re-usable after re-filter) ── */
   function bindOrderTableEvents() {
     const c = document.getElementById('admin-content');
-    c?.querySelectorAll('.status-select').forEach(sel => {
+    c?.querySelectorAll('.status-select[data-order-id]').forEach(sel => {
       sel.addEventListener('change', async () => {
         await API.updateOrderStatus(sel.dataset.orderId, sel.value);
         App.toast('Status updated', 'success');
@@ -836,7 +1176,62 @@ const Admin = (() => {
     c?.querySelectorAll('[data-invoice]').forEach(btn => {
       btn.addEventListener('click', () => generateInvoice(btn.dataset.invoice));
     });
+    c?.querySelectorAll('[data-view-order]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const orders = await API.getOrders();
+        const o = orders.find(x => x.id === btn.dataset.viewOrder);
+        if (!o) return;
+        const existing = document.getElementById('order-detail-modal');
+        if (existing) existing.remove();
+        const modal = document.createElement('div');
+        modal.id = 'order-detail-modal';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(3px)';
+        modal.innerHTML = `
+          <div style="background:var(--white);border-radius:var(--r-xl);max-width:520px;width:100%;padding:1.5rem;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-xl)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+              <h3 style="font-size:1rem;font-weight:700;color:var(--blue-d)">Order ${o.id}</h3>
+              <button onclick="document.getElementById('order-detail-modal').remove()"
+                style="background:var(--n-100);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1.125rem">×</button>
+            </div>
+            <div style="background:var(--n-50);border-radius:var(--r-lg);padding:1rem;margin-bottom:1rem;font-size:.8125rem">
+              <p><strong>Customer:</strong> ${o.customer?.name || '—'}</p>
+              <p><strong>Phone:</strong> ${o.customer?.phone || '—'}</p>
+              ${o.customer?.email ? `<p><strong>Email:</strong> ${o.customer.email}</p>` : ''}
+              <p><strong>Delivery Zone:</strong> ${o.customer?.zone || '—'}</p>
+              <p><strong>Address:</strong> ${o.customer?.address || '—'}</p>
+              ${o.customer?.notes ? `<p><strong>Notes:</strong> ${o.customer.notes}</p>` : ''}
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:.8125rem;margin-bottom:1rem">
+              <thead><tr style="background:var(--n-100)">
+                <th style="padding:.5rem;text-align:left">Product</th>
+                <th style="padding:.5rem;text-align:center">Qty</th>
+                <th style="padding:.5rem;text-align:right">Price</th>
+              </tr></thead>
+              <tbody>
+                ${(o.items || []).map(item => `
+                  <tr>
+                    <td style="padding:.5rem .5rem;border-bottom:1px solid var(--n-100)">${item.emoji || ''} ${item.name}</td>
+                    <td style="padding:.5rem;text-align:center;border-bottom:1px solid var(--n-100)">${item.qty}</td>
+                    <td style="padding:.5rem;text-align:right;border-bottom:1px solid var(--n-100)">KES ${((item.price||0)*(item.qty||1)).toLocaleString()}</td>
+                  </tr>`).join('')}
+                <tr>
+                  <td colspan="2" style="padding:.5rem;font-weight:700;color:var(--blue-d)">Total</td>
+                  <td style="padding:.5rem;text-align:right;font-weight:700;color:var(--blue-d)">KES ${(o.total||0).toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div style="display:flex;gap:.625rem;flex-wrap:wrap">
+              <button class="admin-btn admin-btn-primary" onclick="Admin._printInvoice('${o.id}');document.getElementById('order-detail-modal').remove()">🖨 Print Invoice</button>
+              <button class="admin-btn" onclick="document.getElementById('order-detail-modal').remove()" style="background:var(--n-100);color:var(--n-700)">Close</button>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+      });
+    });
   }
 
-  return { open, close, switchTab };
+  function _printInvoice(id) { generateInvoice(id); }
+
+  return { open, close, switchTab, _printInvoice };
 })();

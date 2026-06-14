@@ -47,7 +47,13 @@ const Products = (() => {
               <div class="pcard-price">KES ${p.price.toLocaleString()}</div>
               ${p.oldPrice ? `<div class="pcard-old">KES ${p.oldPrice.toLocaleString()}</div>` : ''}
             </div>
-            <button class="pcard-add" data-add-id="${p.id}">+ Add</button>
+            <div class="pcard-qty-selector" data-product-id="${p.id}" style="display:none;flex;gap:0.25rem;align-items:center">
+              <button class="pcard-qty-btn" data-qty-action="minus" title="Decrease quantity">−</button>
+              <input type="number" class="pcard-qty-input" value="1" min="1" max="${p.stock}" style="width:40px;text-align:center;padding:0.25rem;border:1px solid var(--n-300);border-radius:var(--r-sm);font-size:0.875rem">
+              <button class="pcard-qty-btn" data-qty-action="plus" title="Increase quantity">+</button>
+              <button class="pcard-add" data-add-id="${p.id}" style="margin-left:auto;padding:0.4rem 0.75rem;font-size:0.75rem">Add</button>
+            </div>
+            <button class="pcard-add-qty" data-product-id="${p.id}" style="display:flex">+ Add</button>
           </div>
         </div>
       </article>`;
@@ -77,14 +83,11 @@ const Products = (() => {
     const loved = wish.includes(p.id);
     const disc  = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
 
-    /* Build image gallery if additional images exist */
-    const altImgs = [p.imageAlt1, p.imageAlt2].filter(Boolean);
-    const galleryHtml = altImgs.length ? `
+    /* Build image gallery — main image is always first thumb */
+    const allImgs = [p.imageMain, p.imageAlt1, p.imageAlt2].filter(Boolean);
+    const galleryHtml = allImgs.length > 1 ? `
       <div class="pd-gallery">
-        ${altImgs.map(src => `<img src="${src}" alt="${p.name}" class="pd-gallery-thumb" loading="lazy"
-          onclick="document.querySelector('.pd-img-photo,.pd-img-emoji').src !== undefined
-            ? document.querySelector('.pd-img-photo') && (document.querySelector('.pd-img-photo').src='${src}')
-            : null">`).join('')}
+        ${allImgs.map((src, i) => `<img src="${src}" alt="${p.name}" class="pd-gallery-thumb${i === 0 ? ' active' : ''}" loading="lazy">`).join('')}
       </div>` : '';
 
     const imgAreaHtml = p.imageMain
@@ -120,10 +123,10 @@ const Products = (() => {
               onclick="this.closest('.pd-var-btns').querySelectorAll('.pd-var-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${s}</button>`).join('')}
           </div>
           <div class="pd-actions">
-            <button class="pd-buy-now" onclick="Checkout.buyNow(${p.id})">
+            <button class="pd-buy-now" data-buy-id="${p.id}">
               ⚡ Buy Now
             </button>
-            <button class="pd-add" data-add-id="${p.id}" onclick="Cart.add(${p.id});App.closeProductModal()">
+            <button class="pd-add" data-add-id="${p.id}" data-close-modal>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
               Add to Cart
             </button>
@@ -134,11 +137,16 @@ const Products = (() => {
         </div>
       </div>`;
 
-    /* Gallery thumb click — swap main image */
-    document.querySelectorAll('.pd-gallery-thumb').forEach(thumb => {
+    /* Gallery thumb click — swap main image + active state */
+    const thumbs = document.querySelectorAll('.pd-gallery-thumb');
+    thumbs.forEach(thumb => {
       thumb.addEventListener('click', () => {
         const main = document.getElementById('pd-main-img');
-        if (main) { main.src = thumb.src; }
+        if (main) {
+          main.src = thumb.src;
+          thumbs.forEach(t => t.classList.remove('active'));
+          thumb.classList.add('active');
+        }
       });
     });
 

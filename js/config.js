@@ -2,8 +2,8 @@
    CONFIG
    ═══════════════════════════════════════ */
 const Config = {
-  BASE_URL:          null,
-  USE_LOCAL_STORAGE: true,
+  BASE_URL:          '/api',
+  USE_LOCAL_STORAGE: false,
 
   LS_KEYS: {
     PRODUCTS:   'ibh_products',

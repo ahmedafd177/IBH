@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Inspiring Beauty Hub — Premium perfumes, hair care & body care. 500+ products from 80+ world-class brands." />
+  <meta name="description" content="Inspiring Beauty Hub — Premium perfumes, hair care &amp; body care. 500+ products from 80+ world-class brands." />
   <title>Inspiring Beauty Hub — Premium Fragrances &amp; Beauty</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -56,7 +56,7 @@
 
     <nav class="header-nav" aria-label="Main navigation">
       <ul class="nav-list" role="list">
-        <li class="nav-item"><a href="#" class="nav-link">Home</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" id="nav-home-link">Home</a></li>
 
         <li class="nav-item has-dropdown">
           <a href="#" class="nav-link" data-cat="perfume" aria-haspopup="true">
@@ -166,13 +166,29 @@
                 <!-- populated by app.js on init -->
               </div>
               <div class="dropdown-brands-footer">
-                <a href="#" data-action="show-brands" class="dropdown-view-all">View all brands →</a>
+                <a href="#" data-action="show-brands" class="dropdown-view-all">View all brands &rarr;</a>
               </div>
             </div>
           </div>
         </li>
 
-        <li class="nav-item"><a href="#why-ibh" class="nav-link">About</a></li>
+        <li class="nav-item has-dropdown">
+          <a href="#" class="nav-link" aria-haspopup="true">
+            Categories <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </a>
+          <div class="nav-dropdown" role="menu">
+            <div class="dropdown-inner">
+              <div class="dropdown-col">
+                <p class="dropdown-heading">All Subcategories</p>
+                <ul id="nav-categories-list">
+                  <!-- populated by app.js from backend -->
+                </ul>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="nav-item"><a href="/about" class="nav-link" data-action="show-about">About</a></li>
       </ul>
     </nav>
 
@@ -182,7 +198,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         </button>
         <div class="search-expand" id="search-expand" role="search">
-          <input type="search" id="search-input" class="search-input" placeholder="Search products, brands…" autocomplete="off" aria-label="Search" />
+          <input type="search" id="search-input" class="search-input" placeholder="Search products, brands&hellip;" autocomplete="off" aria-label="Search" />
           <button class="search-clear" id="search-clear" aria-label="Clear search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
@@ -219,12 +235,23 @@
 <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation" aria-hidden="true">
   <div class="mobile-nav-header">
     <img src="assets/images/logo.jpeg" alt="IBH" class="mobile-logo" />
-    <button class="mobile-close" id="mobile-close" aria-label="Close menu">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-    </button>
+    <div class="mobile-nav-header-actions">
+      <button class="header-btn" id="mobile-wishlist-btn" aria-label="Wishlist">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
+      <button class="header-btn cart-btn" id="mobile-cart-btn" aria-label="Cart">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      </button>
+      <button class="mobile-close" id="mobile-close" aria-label="Close menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-search-wrap">
+    <input type="search" id="mobile-search-input" class="mobile-search-input" placeholder="Search products, brands&hellip;" autocomplete="off" />
   </div>
   <div class="mobile-nav-list">
-    <a href="#" class="mobile-nav-link">Home</a>
+    <a href="#" class="mobile-nav-link" id="mobile-home-link">Home</a>
     <div class="mobile-nav-group">
       <button class="mobile-nav-group-toggle">Perfume <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="mobile-nav-sub">
@@ -252,8 +279,19 @@
         <a href="#" data-cat="body" data-filter="subcat:Body Scrub">Scrubs</a>
       </div>
     </div>
-    <a href="#" class="mobile-nav-link" data-action="show-brands">Brands</a>
-    <a href="#why-ibh" class="mobile-nav-link">About</a>
+    <div class="mobile-nav-group">
+      <button class="mobile-nav-group-toggle">Brands <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="mobile-nav-sub" id="mobile-brands-list">
+        <a href="#" data-action="show-brands">View All Brands</a>
+      </div>
+    </div>
+    <div class="mobile-nav-group">
+      <button class="mobile-nav-group-toggle">Categories <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="mobile-nav-sub" id="mobile-cats-list">
+        <!-- populated by app.js from backend -->
+      </div>
+    </div>
+    <a href="/about" class="mobile-nav-link" data-action="show-about">About</a>
   </div>
   <div class="mobile-nav-footer">
     <a href="#" class="mobile-social" aria-label="WhatsApp">
@@ -340,17 +378,9 @@
     <div class="container"><p class="brands-label">Our Brands</p></div>
     <div class="brands-ticker-wrap">
       <div class="brands-ticker">
-        <span>Chanel</span><span>Dior</span><span>Tom Ford</span><span>Versace</span>
-        <span>Gucci</span><span>YSL</span><span>Armani</span><span>Ajmal</span>
-        <span>Rasasi</span><span>OGX</span><span>Shea Moisture</span><span>Cantu</span>
-        <span>Pantene</span><span>Nivea</span><span>Dove</span><span>The Body Shop</span><span>Vaseline</span>
-        <span>Chanel</span><span>Dior</span><span>Tom Ford</span><span>Versace</span>
-        <span>Gucci</span><span>YSL</span><span>Armani</span><span>Ajmal</span>
-        <span>Rasasi</span><span>OGX</span><span>Shea Moisture</span><span>Cantu</span>
-        <span>Pantene</span><span>Nivea</span><span>Dove</span><span>The Body Shop</span><span>Vaseline</span>
+        <!-- populated dynamically by app.js populateBrandsTicker() -->
       </div>
     </div>
-    </video>
   </section>
 
   <!-- NEW ARRIVALS -->
@@ -367,39 +397,6 @@
       </div>
     </div>
   </section>
-
-  <!-- FEATURE STRIP
-   move this section to About US page.
-  <section class="feature-strip section-sm" aria-label="Our commitments">
-    <div class="container">
-      <div class="feature-strip-grid">
-        <div class="feature-item">
-          <div class="feature-icon" aria-hidden="true">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </div>
-          <div class="feature-text"><strong>Fast Delivery</strong><span>Nairobi same-day delivery</span></div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon" aria-hidden="true">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-          <div class="feature-text"><strong>100% Authentic</strong><span>Certified genuine products</span></div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon" aria-hidden="true">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          </div>
-          <div class="feature-text"><strong>3 Store Locations</strong><span>Visit us in Nairobi</span></div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon" aria-hidden="true">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          </div>
-          <div class="feature-text"><strong>Easy Returns</strong><span>Noreturn policy</span></div>
-        </div>
-      </div>
-    </div>
-  </section> -->
 
   <!-- TRENDING -->
   <section id="trending" class="section" style="background:var(--n-50)" aria-labelledby="trending-h">
@@ -425,7 +422,7 @@
       <div class="sec-header">
         <p class="sec-eyebrow">Customer Favourites</p>
         <h2 class="sec-title" id="most-sell-h">Best Sellers</h2>
-        <p class="sec-sub">Our most purchased products — loved by thousands</p>
+        <p class="sec-sub">Our most purchased products &mdash; loved by thousands</p>
       </div>
       <div class="filter-tabs" id="most-sell-filter-tabs" role="tablist" aria-label="Filter best sellers">
         <button class="filter-tab active" data-filter="all"     role="tab" aria-selected="true">All</button>
@@ -492,6 +489,92 @@
         </button>
       </div>
       <div class="brands-grid" id="brands-grid" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- WISHLIST PAGE -->
+  <section id="wishlist-page" class="section" hidden aria-labelledby="wishlist-page-h">
+    <div class="container">
+      <div class="shop-header">
+        <div>
+          <p class="sec-eyebrow">Your Favourites</p>
+          <h2 class="sec-title" id="wishlist-page-h">My Wishlist</h2>
+        </div>
+        <button class="btn btn-ghost" id="wishlist-back">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Home
+        </button>
+      </div>
+      <div class="products-grid" id="wishlist-grid" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ABOUT PAGE -->
+  <section id="about-page" class="section" hidden aria-labelledby="about-h">
+    <div class="container">
+      <div class="shop-header">
+        <div>
+          <p class="sec-eyebrow">Our Story</p>
+          <h2 class="sec-title" id="about-h">About Us</h2>
+        </div>
+        <button class="btn btn-ghost" id="about-back">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Home
+        </button>
+      </div>
+
+      <!-- Feature Strip -->
+      <div class="feature-strip-grid" style="margin:2rem 0 2.5rem">
+        <div class="feature-item">
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+          <div class="feature-text"><strong>Fast Delivery</strong><span>Nairobi same-day delivery</span></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="feature-text"><strong>100% Authentic</strong><span>Certified genuine products</span></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div class="feature-text"><strong>3 Store Locations</strong><span>Visit us in Nairobi</span></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="feature-text"><strong>Easy Returns</strong><span>Hassle-free return policy</span></div>
+        </div>
+      </div>
+
+      <!-- Why IBH -->
+      <div class="why-inner">
+        <div class="why-content">
+          <p class="sec-eyebrow">Why Choose Us</p>
+          <h2 class="sec-title" style="text-align:left">The IBH Difference</h2>
+          <p class="why-desc">We curate the finest beauty products with a commitment to authenticity, quality, and customer satisfaction. Inspiring Beauty Hub was founded with a simple vision — to make premium beauty accessible to everyone in Nairobi.</p>
+          <ul class="why-list">
+            <li><span class="why-check" aria-hidden="true">&#10003;</span><div><strong>Expert Curation</strong><p>Every product selected by our beauty experts</p></div></li>
+            <li><span class="why-check" aria-hidden="true">&#10003;</span><div><strong>Competitive Pricing</strong><p>Best prices with regular promotions</p></div></li>
+            <li><span class="why-check" aria-hidden="true">&#10003;</span><div><strong>Multiple Payment Options</strong><p>M-PESA, card, and pay in-store</p></div></li>
+            <li><span class="why-check" aria-hidden="true">&#10003;</span><div><strong>Loyalty Rewards</strong><p>Earn points on every purchase</p></div></li>
+          </ul>
+          <button class="btn btn-primary btn-lg" data-action="shop-all" style="margin-top:1.5rem">
+            Shop Now
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <div class="why-cards" aria-hidden="true">
+          <div class="why-card why-card-main"><div class="why-card-number">500+</div><div class="why-card-label">Premium Products</div></div>
+          <div class="why-card why-card-gold"><div class="why-card-number">80+</div><div class="why-card-label">Global Brands</div></div>
+          <div class="why-card why-card-dark"><div class="why-card-number">10k+</div><div class="why-card-label">Happy Customers</div></div>
+          <div class="why-card why-card-outline"><div class="why-card-number">3</div><div class="why-card-label">Store Locations</div></div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -564,7 +647,7 @@
         <li><a href="#" data-cat="body">Body Care</a></li>
         <li><a href="#new-arrivals">New Arrivals</a></li>
         <li><a href="#trending">Trending</a></li>
-        <li><a href="#why-ibh">About Us</a></li>
+        <li><a href="/about" data-action="show-about">About Us</a></li>
       </ul>
     </div>
     <div class="footer-col">
@@ -668,6 +751,10 @@
         <button class="admin-tab" data-tab="add-product" role="tab">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Product
+        </button>
+        <button class="admin-tab" data-tab="users" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Users
         </button>
         <button class="admin-tab" data-tab="settings" role="tab">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>

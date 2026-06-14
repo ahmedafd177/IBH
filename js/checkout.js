@@ -64,11 +64,12 @@ const Checkout = (() => {
         ${labels.map((label, i) => {
           const n = i + 1;
           const cls = _step > n ? 'done' : _step === n ? 'active' : '';
+          const isClickable = n <= _step ? 'clickable' : '';
           return `
-            <div class="co-step-item ${cls}">
+            <button class="co-step-item ${cls} ${isClickable}" data-step="${n}" type="button" ${n <= _step ? '' : 'disabled'}>
               <div class="co-step-dot">${_step > n ? '✓' : n}</div>
               <div class="co-step-lbl">${label}</div>
-            </div>
+            </button>
             ${i < 2 ? `<div class="co-step-line ${_step > n ? 'done' : ''}"></div>` : ''}`;
         }).join('')}
       </div>`;
@@ -189,27 +190,64 @@ const Checkout = (() => {
             <span>${_user.type === 'google' ? '🔵' : '👤'} ${_user.name}${_user.phone ? ' · '+_user.phone : ''}</span>
             <button class="co-signout" id="co-signout">Change</button>
           </div>` : ''}
+
         <div class="form-group">
-          <label>Delivery Zone</label>
+          <label>Delivery Town / Zone <span class="req">*</span></label>
           <select id="co-zone-sel" class="form-control">
             ${zones.map(zo => `
               <option value="${zo.fee}" data-label="${zo.label}" ${z.label===zo.label?'selected':''}>
                 ${zo.label} — ${zo.fee === 0 ? 'FREE' : 'KES '+zo.fee.toLocaleString()}
               </option>`).join('')}
           </select>
+          <!-- Selected zone badge -->
+          <div id="co-zone-badge" class="co-zone-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span id="co-zone-badge-text">${z.label}</span>
+            <strong id="co-zone-badge-fee" style="margin-left:auto;color:${z.fee===0?'var(--ok)':'var(--blue-d)'}">
+              ${z.fee === 0 ? 'FREE' : 'KES '+z.fee.toLocaleString()}
+            </strong>
+          </div>
         </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name <span class="req">*</span></label>
+            <input id="co-fname" type="text" class="form-control"
+              placeholder="Jane" value="${_user?.name?.split(' ')[0] || ''}" autocomplete="given-name">
+          </div>
+          <div class="form-group">
+            <label>Last Name <span class="req">*</span></label>
+            <input id="co-lname" type="text" class="form-control"
+              placeholder="Wanjiku" value="${_user?.name?.split(' ').slice(1).join(' ') || ''}" autocomplete="family-name">
+          </div>
+        </div>
+
         <div class="form-group">
-          <label>Building / Street Address <span class="req">*</span></label>
+          <label>Building / Estate / Street <span class="req">*</span></label>
           <input id="co-address" type="text" class="form-control"
-            placeholder="e.g. ABC Plaza, 2nd Floor, Westlands Ave"
+            placeholder="e.g. ABC Plaza, Westlands Ave"
             value="${_address}" autocomplete="street-address">
         </div>
+
+        <div class="form-group">
+          <label>Phone Number <span class="req">*</span></label>
+          <input id="co-del-phone" type="tel" class="form-control"
+            placeholder="07XX XXX XXX" value="${_user?.phone || ''}" autocomplete="tel">
+        </div>
+
+        <div class="form-group">
+          <label>Email <span class="opt">optional</span></label>
+          <input id="co-del-email" type="email" class="form-control"
+            placeholder="jane@example.com" value="${_user?.email || ''}" autocomplete="email">
+        </div>
+
         <div class="form-group">
           <label>Delivery Notes <span class="opt">optional</span></label>
           <input id="co-notes" type="text" class="form-control"
             value="${_notes}"
-            placeholder="e.g. Call when you arrive">
+            placeholder="e.g. Call when you arrive, gate code…">
         </div>
+
         <div id="co-bd-wrap">${_breakdown(_sub(), z.fee)}</div>
         <div class="co-nav">
           ${!_user ? `<button class="btn btn-ghost" id="co-back">← Back</button>` : '<span></span>'}
@@ -446,39 +484,95 @@ const Checkout = (() => {
      EVENT BINDING
      ═══════════════════════════════ */
   function _bind() {
-    /* Step 1 — auth mode switch */
-    document.querySelectorAll('[data-auth-mode]').forEach(btn => {
-      btn.addEventListener('click', () => {
+    /* Step indicator navigation — allow clicking to go back */
+    document.querySelectorAll('[data-step]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const targetStep = parseInt(btn.dataset.step);
+        if (targetStep <= _step) {
+          _step = targetStep;
+          _render();
+        }
+      });
+    });
+
+    /* Step 1 — auth mode switch via event delegation */
+    const authModeButtons = document.querySelectorAll('[data-auth-mode]');
+    authModeButtons.forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
         _authMode = btn.dataset.authMode;
-        document.querySelectorAll('[data-auth-mode]').forEach(b => b.classList.toggle('active', b === btn));
-        document.getElementById('co-auth-form').innerHTML = _authForm();
-        _bindAuthSubmit();
+        authModeButtons.forEach(b => b.classList.toggle('active', b === btn));
+        const formEl = document.getElementById('co-auth-form');
+        if (formEl) {
+          formEl.innerHTML = _authForm();
+          _bindAuthSubmit();
+        }
       });
     });
     _bindAuthSubmit();
 
     /* Google button */
-    document.getElementById('btn-google')?.addEventListener('click', _triggerGoogle);
+    const googleBtn = document.getElementById('btn-google');
+    if (googleBtn) googleBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      _triggerGoogle();
+    });
 
-    /* Step 2 — zone change updates breakdown */
-    document.getElementById('co-zone-sel')?.addEventListener('change', e => {
-      const opt = e.target.options[e.target.selectedIndex];
-      _zone = { label: opt.dataset.label, fee: Number(e.target.value) };
-      document.getElementById('co-bd-wrap').innerHTML = _breakdown(_sub(), _zone.fee);
-    });
-    document.getElementById('co-back')?.addEventListener('click', () => { _step--; _render(); });
-    document.getElementById('co-next')?.addEventListener('click', _submitDelivery);
-    document.getElementById('co-signout')?.addEventListener('click', () => {
-      _user = null;
-      localStorage.removeItem('ibh_account');
-      _step = 1; _render();
-    });
+    /* Step 2 — zone change updates breakdown and badge */
+    const zoneSelect = document.getElementById('co-zone-sel');
+    if (zoneSelect) {
+      zoneSelect.addEventListener('change', e => {
+        e.stopPropagation();
+        const opt = e.target.options[e.target.selectedIndex];
+        _zone = { label: opt.dataset.label, fee: Number(e.target.value) };
+        const bdWrap = document.getElementById('co-bd-wrap');
+        if (bdWrap) bdWrap.innerHTML = _breakdown(_sub(), _zone.fee);
+        const badge = document.getElementById('co-zone-badge-text');
+        const feeBadge = document.getElementById('co-zone-badge-fee');
+        if (badge) badge.textContent = _zone.label;
+        if (feeBadge) {
+          feeBadge.textContent = _zone.fee === 0 ? 'FREE' : `KES ${_zone.fee.toLocaleString()}`;
+          feeBadge.style.color = _zone.fee === 0 ? 'var(--ok)' : 'var(--blue-d)';
+        }
+      });
+    }
+
+    const backBtn = document.getElementById('co-back');
+    if (backBtn) {
+      backBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        _step--;
+        _render();
+      });
+    }
+
+    const nextBtn = document.getElementById('co-next');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        _submitDelivery();
+      });
+    }
+
+    const signoutBtn = document.getElementById('co-signout');
+    if (signoutBtn) {
+      signoutBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        _user = null;
+        localStorage.removeItem('ibh_account');
+        _step = 1;
+        _render();
+      });
+    }
 
     /* Step 3 — pay method */
-    document.querySelectorAll('[data-pay]').forEach(card => {
-      card.addEventListener('click', () => {
+    const payCards = document.querySelectorAll('[data-pay]');
+    payCards.forEach(card => {
+      card.addEventListener('click', e => {
+        e.stopPropagation();
         _payMethod = card.dataset.pay;
-        document.querySelectorAll('[data-pay]').forEach(c => c.classList.toggle('active', c === card));
+        payCards.forEach(c => c.classList.toggle('active', c === card));
         _renderPayDetail();
         _bindPlaceOrder();
       });
@@ -488,24 +582,43 @@ const Checkout = (() => {
   }
 
   function _bindAuthSubmit() {
-    document.getElementById('auth-submit')?.addEventListener('click', _submitAuth);
+    const submitBtn = document.getElementById('auth-submit');
+    if (!submitBtn) return;
+    submitBtn.replaceWith(submitBtn.cloneNode(true));
+    const newBtn = document.getElementById('auth-submit');
+    if (newBtn) {
+      newBtn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        _submitAuth();
+      });
+    }
   }
 
   function _bindPlaceOrder() {
     const btn = document.getElementById('co-place-btn');
     if (!btn) return;
-    btn.replaceWith(btn.cloneNode(true)); /* remove old listener */
-    document.getElementById('co-place-btn')?.addEventListener('click', _placeOrder);
+    btn.replaceWith(btn.cloneNode(true));
+    const newBtn = document.getElementById('co-place-btn');
+    if (newBtn) {
+      newBtn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        _placeOrder(e);
+      });
+    }
   }
 
   /* ═══════════════════════════════
      AUTH
      ═══════════════════════════════ */
-  async function _submitAuth() {
-    const name  = document.getElementById('auth-name')?.value.trim();
-    const phone = document.getElementById('auth-phone')?.value.trim();
-    const email = document.getElementById('auth-email')?.value.trim();
-    const pass  = document.getElementById('auth-pass')?.value;
+  async function _submitAuth(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+
+    const name  = document.getElementById('auth-name')?.value?.trim() || '';
+    const phone = document.getElementById('auth-phone')?.value?.trim() || '';
+    const email = document.getElementById('auth-email')?.value?.trim() || '';
+    const pass  = document.getElementById('auth-pass')?.value || '';
 
     if (!phone) { App.toast('Phone number required', 'error'); return; }
 
@@ -513,7 +626,9 @@ const Checkout = (() => {
       if (!name) { App.toast('Full name required', 'error'); return; }
       _user = { type: 'guest', name, phone, email: email || '' };
       localStorage.setItem('ibh_account', JSON.stringify(_user));
-      _step = 2; _render(); return;
+      _step = 2;
+      _render();
+      return;
     }
 
     if (_authMode === 'register') {
@@ -527,7 +642,8 @@ const Checkout = (() => {
         const all = JSON.parse(localStorage.getItem('ibh_accounts') || '[]');
         if (all.find(a => a.phone === phone)) {
           App.toast('Account already exists — please Sign In', 'error');
-          if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; } return;
+          if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; }
+          return;
         }
         all.push({ name, phone, email, pw: btoa(pass) });
         localStorage.setItem('ibh_accounts', JSON.stringify(all));
@@ -535,17 +651,28 @@ const Checkout = (() => {
       } else {
         try {
           const r = await fetch('/api/auth/register', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, phone, email, password: pass }),
           });
           const data = await r.json();
-          if (!r.ok) { App.toast(data.error || 'Registration failed', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; } return; }
+          if (!r.ok) {
+            App.toast(data.error || 'Registration failed', 'error');
+            if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; }
+            return;
+          }
           _user = { type: 'account', name, phone, email };
-        } catch { App.toast('Network error — try again', 'error'); return; }
+        } catch (err) {
+          App.toast('Network error — try again', 'error');
+          if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; }
+          return;
+        }
       }
       localStorage.setItem('ibh_account', JSON.stringify(_user));
       App.toast(`Account created! Welcome, ${name.split(' ')[0]} 🎉`, 'success');
-      _step = 2; _render(); return;
+      _step = 2;
+      _render();
+      return;
     }
 
     /* login */
@@ -558,23 +685,34 @@ const Checkout = (() => {
       const acc = all.find(a => a.phone === phone && a.pw === btoa(pass));
       if (!acc) {
         App.toast('Incorrect phone or password', 'error');
-        if (btn) { btn.disabled = false; btn.textContent = 'Sign In →'; } return;
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign In →'; }
+        return;
       }
       _user = { type: 'account', name: acc.name, phone, email: acc.email };
     } else {
       try {
         const r = await fetch('/api/auth/login', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone, password: pass }),
         });
         const data = await r.json();
-        if (!r.ok) { App.toast(data.error || 'Login failed', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Sign In →'; } return; }
+        if (!r.ok) {
+          App.toast(data.error || 'Login failed', 'error');
+          if (btn) { btn.disabled = false; btn.textContent = 'Sign In →'; }
+          return;
+        }
         _user = { type: 'account', name: data.name, phone, email: data.email };
-      } catch { App.toast('Network error — try again', 'error'); return; }
+      } catch (err) {
+        App.toast('Network error — try again', 'error');
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign In →'; }
+        return;
+      }
     }
     localStorage.setItem('ibh_account', JSON.stringify(_user));
     App.toast(`Welcome back, ${_user.name.split(' ')[0]}! 👋`, 'success');
-    _step = 2; _render();
+    _step = 2;
+    _render();
   }
 
   /* ── Google Sign-In ── */
@@ -625,27 +763,49 @@ const Checkout = (() => {
   /* ═══════════════════════════════
      DELIVERY
      ═══════════════════════════════ */
-  function _submitDelivery() {
-    _address = document.getElementById('co-address')?.value.trim() || '';
-    _notes   = document.getElementById('co-notes')?.value.trim() || '';
+  function _submitDelivery(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+
+    const fname    = document.getElementById('co-fname')?.value?.trim() || '';
+    const lname    = document.getElementById('co-lname')?.value?.trim() || '';
+    const delPhone = document.getElementById('co-del-phone')?.value?.trim() || '';
+    const delEmail = document.getElementById('co-del-email')?.value?.trim() || '';
+    _address = document.getElementById('co-address')?.value?.trim() || '';
+    _notes   = document.getElementById('co-notes')?.value?.trim() || '';
+
     if (!_address) { App.toast('Please enter your delivery address', 'error'); return; }
+    if (!delPhone) { App.toast('Please enter your phone number', 'error'); return; }
+
     const zoneEl = document.getElementById('co-zone-sel');
     if (zoneEl) {
       const opt = zoneEl.options[zoneEl.selectedIndex];
       _zone = { label: opt.dataset.label, fee: Number(zoneEl.value) };
     }
-    _step = 3; _render();
+
+    /* update user with delivery details */
+    if (!_user) {
+      _user = { type: 'guest', name: `${fname} ${lname}`.trim() || 'Guest', phone: delPhone, email: delEmail };
+    } else {
+      if (fname || lname) _user.name = `${fname} ${lname}`.trim() || _user.name;
+      if (delPhone) _user.phone = delPhone;
+      if (delEmail) _user.email = delEmail;
+    }
+
+    _step = 3;
+    _render();
   }
 
   /* ═══════════════════════════════
      PLACE ORDER
      ═══════════════════════════════ */
-  async function _placeOrder() {
+  async function _placeOrder(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+
     const total = _sub() + (_zone?.fee ?? 0);
 
     if (_payMethod === 'mpesa') {
-      const mpPhone = document.getElementById('co-mpesa-phone')?.value.trim();
-      const mpRef   = document.getElementById('co-mpesa-ref')?.value.trim();
+      const mpPhone = document.getElementById('co-mpesa-phone')?.value?.trim();
+      const mpRef   = document.getElementById('co-mpesa-ref')?.value?.trim();
       if (!mpPhone) { App.toast('Enter your M-PESA phone number', 'error'); return; }
       if (!mpRef)   { App.toast('Enter your M-PESA transaction code', 'error'); return; }
     }
@@ -653,33 +813,39 @@ const Checkout = (() => {
     const btn = document.getElementById('co-place-btn');
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Processing…'; }
 
-    await new Promise(r => setTimeout(r, 1500));
+    try {
+      await new Promise(r => setTimeout(r, 1500));
 
-    const mpesaPhone = document.getElementById('co-mpesa-phone')?.value.trim() || '';
-    const mpesaRef   = document.getElementById('co-mpesa-ref')?.value.trim()   || '';
+      const mpesaPhone = document.getElementById('co-mpesa-phone')?.value?.trim() || '';
+      const mpesaRef   = document.getElementById('co-mpesa-ref')?.value?.trim() || '';
 
-    const order = await API.createOrder({
-      customer: {
-        name:    _user?.name    || 'Guest',
-        phone:   _user?.phone   || mpesaPhone,
-        email:   _user?.email   || '',
-        address: _address,
-        zone:    _zone?.label   || '',
-        notes:   _notes,
-      },
-      items:    _items,
-      total,
-      payment:  _payMethod,
-      mpesaRef,
-    });
+      const order = await API.createOrder({
+        customer: {
+          name:    _user?.name    || 'Guest',
+          phone:   _user?.phone   || mpesaPhone,
+          email:   _user?.email   || '',
+          address: _address,
+          zone:    _zone?.label   || '',
+          notes:   _notes,
+        },
+        items:    _items,
+        total,
+        payment:  _payMethod,
+        mpesaRef,
+      });
 
-    if (!_buyNow) {
-      API.saveCart([]);
-      Cart.updateBadge();
-      Cart.render();
+      if (!_buyNow) {
+        API.saveCart([]);
+        Cart.updateBadge();
+        Cart.render();
+      }
+
+      _renderConfirmation(order);
+    } catch (err) {
+      console.error('Order error:', err);
+      App.toast('Error creating order — try again', 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = '🔒 Pay KES ' + total.toLocaleString(); }
     }
-
-    _renderConfirmation(order);
   }
 
   return { open, buyNow };

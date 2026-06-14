@@ -167,12 +167,15 @@ const API = (() => {
   /* ─────────────── CATEGORIES ─────────────── */
 
   function getCategories() {
-    return ls() ? lsGet(K.CATEGORIES) || SeedData.categories : [];
+    if (!ls()) return [];
+    const cats = lsGet(K.CATEGORIES);
+    return (cats && cats.length > 0) ? cats : SeedData.categories;
   }
 
   async function getCategoriesAsync() {
-    if (ls()) return lsGet(K.CATEGORIES) || SeedData.categories;
-    return api('/categories');
+    if (!ls()) return api('/categories');
+    const cats = lsGet(K.CATEGORIES);
+    return (cats && cats.length > 0) ? cats : SeedData.categories;
   }
 
   function saveCategories(cats) {
@@ -192,6 +195,17 @@ const API = (() => {
     return api('/categories/rename', { method: 'POST', body: { oldName, newName } });
   }
 
+  async function addCategory(name) {
+    if (ls()) {
+      const cats = getCategories();
+      if (cats.includes(name)) throw new Error('Category already exists');
+      cats.push(name);
+      lsSet(K.CATEGORIES, cats);
+      return { name };
+    }
+    return api('/categories', { method: 'POST', body: { name } });
+  }
+
   async function deleteCategory(name) {
     if (ls()) {
       lsSet(K.CATEGORIES, getCategories().filter(c => c !== name));
@@ -201,6 +215,23 @@ const API = (() => {
     const cat = cats.find(c => c.name === name || c === name);
     const id = cat?.id || encodeURIComponent(name);
     return api(`/categories/${id}`, { method: 'DELETE' });
+  }
+
+  /* ─────────────── MAIN CATEGORIES ─────────────── */
+  const _mainCatsFallback = [
+    { id: 1, slug: 'perfume', name: 'Perfume',   image: null },
+    { id: 2, slug: 'hair',    name: 'Hair Care',  image: null },
+    { id: 3, slug: 'body',    name: 'Body Care',  image: null },
+  ];
+
+  async function getMainCategoriesAsync() {
+    if (ls()) return _mainCatsFallback;
+    return api('/main-categories');
+  }
+
+  async function updateMainCategory(id, data) {
+    if (ls()) return data;
+    return api(`/main-categories/${id}`, { method: 'PUT', body: data });
   }
 
   /* ─────────────── CART ─────────────── */
@@ -259,6 +290,37 @@ const API = (() => {
   }
 
   /* ─────────────── USERS ─────────────── */
+  async function createUser({ name, phone, email = '', role = 'customer', password = 'ibh2025' }) {
+    if (ls()) {
+      const accounts = JSON.parse(localStorage.getItem('ibh_accounts') || '[]');
+      if (accounts.find(a => a.phone === phone)) throw new Error('Phone already registered');
+      const u = { id: Date.now(), name, phone, email, role, orderCount: 0, totalSpent: 0, lastOrder: '' };
+      accounts.push({ ...u, pw: btoa(password) });
+      localStorage.setItem('ibh_accounts', JSON.stringify(accounts));
+      return u;
+    }
+    return api('/users', { method: 'POST', body: { name, phone, email, role, password } });
+  }
+
+  async function updateUserRole(id, role, extra = {}) {
+    if (ls()) {
+      const accounts = JSON.parse(localStorage.getItem('ibh_accounts') || '[]');
+      const a = accounts.find(x => String(x.id) === String(id) || x.phone === id);
+      if (a) { Object.assign(a, { role, ...extra }); localStorage.setItem('ibh_accounts', JSON.stringify(accounts)); }
+      return;
+    }
+    return api(`/users/${id}`, { method: 'PUT', body: { role, ...extra } });
+  }
+
+  async function deleteUser(id) {
+    if (ls()) {
+      const accounts = JSON.parse(localStorage.getItem('ibh_accounts') || '[]');
+      localStorage.setItem('ibh_accounts', JSON.stringify(accounts.filter(a => String(a.id) !== String(id) && a.phone !== id)));
+      return;
+    }
+    return api(`/users/${id}`, { method: 'DELETE' });
+  }
+
   async function getUsers() {
     if (ls()) {
       const orders = lsGet(K.ORDERS) || [];
@@ -308,11 +370,12 @@ const API = (() => {
     init,
     getProducts, getProduct, addProduct, updateProduct, deleteProduct,
     getBrands, getBrandsAsync, saveBrands, addBrand, updateBrand, deleteBrand,
-    getCategories, getCategoriesAsync, saveCategories, updateCategory, deleteCategory,
+    getCategories, getCategoriesAsync, saveCategories, addCategory, updateCategory, deleteCategory,
+    getMainCategoriesAsync, updateMainCategory,
     getCart, saveCart,
     getWishlist, saveWishlist,
     getOrders, createOrder, updateOrderStatus,
-    getUsers,
+    getUsers, createUser, updateUserRole, deleteUser,
     uploadImage,
   };
 })();

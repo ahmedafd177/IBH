@@ -4,6 +4,7 @@
   "description": "Inspiring Beauty Hub — Node.js + SQLite backend",
   "main": "server.js",
   "scripts": {
+    "build": "node build.js",
     "start": "node server.js",
     "dev": "node --watch server.js"
   },

@@ -3,8 +3,26 @@
    ═══════════════════════════════════════ */
 const App = (() => {
   let _toastTimer;
-  let _shopVisible    = false;
-  let _brandsVisible  = false;
+  let _shopVisible     = false;
+  let _brandsVisible   = false;
+  let _wishlistVisible = false;
+
+  /* ── URL helpers ── */
+  function _setUrl(path) {
+    if (window.location.pathname !== path) history.pushState({ path }, '', path);
+  }
+
+  async function _dispatchRoute() {
+    const p = window.location.pathname.replace(/\/$/, '') || '/';
+    if      (p === '/brands')   await showBrands();
+    else if (p === '/wishlist') await showWishlistPage();
+    else if (p === '/about')    showAbout();
+    else if (p === '/perfume')  await showShop({ cat: 'perfume' }, 'Perfumes',  'Perfume');
+    else if (p === '/hair')     await showShop({ cat: 'hair' },    'Hair Care', 'Hair Care');
+    else if (p === '/body')     await showShop({ cat: 'body' },    'Body Care', 'Body Care');
+    else if (p === '/shop')     await showShop({}, 'All Products', 'Shop');
+    else                        showHome();
+  }
 
   /* ── Toast ── */
   function toast(msg, type = '') {
@@ -25,12 +43,13 @@ const App = (() => {
   const HOME_SECTIONS = ['new-arrivals', 'trending', 'most-sell', 'why-ibh', 'brands-section', 'hero'];
 
   function _hideAll() {
-    [...HOME_SECTIONS, 'shop', 'brands-page'].forEach(id => {
+    [...HOME_SECTIONS, 'shop', 'brands-page', 'wishlist-page', 'about-page'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.hidden = true;
     });
-    _shopVisible   = false;
-    _brandsVisible = false;
+    _shopVisible     = false;
+    _brandsVisible   = false;
+    _wishlistVisible = false;
   }
 
   /* ── Home sections ── */
@@ -38,6 +57,9 @@ const App = (() => {
     await Products.renderGrid(document.getElementById('new-arrivals-grid'), { isNew: true }, 8);
     await renderTrending('all');
     await renderMostSell('all');
+    populateBrandsTicker();
+    await populateNavBrands();
+    await populateNavCategories();
   }
 
   async function renderTrending(cat) {
@@ -56,6 +78,8 @@ const App = (() => {
 
   /* ── Shop section ── */
   async function showShop(filters, title = 'Products', eyebrow = 'Shop') {
+    const catUrls = { Perfumes: '/perfume', 'Hair Care': '/hair', 'Body Care': '/body', 'All Products': '/shop' };
+    _setUrl(catUrls[title] || '/shop');
     _hideAll();
     document.getElementById('shop').hidden = false;
     document.getElementById('shop-h').textContent     = title;
@@ -67,6 +91,7 @@ const App = (() => {
   }
 
   function showHome() {
+    _setUrl('/');
     _hideAll();
     HOME_SECTIONS.forEach(id => {
       const el = document.getElementById(id);
@@ -75,11 +100,30 @@ const App = (() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  /* ── Populate Brands nav dropdown ── */
-  function populateNavBrands() {
+  /* ── About page ── */
+  function showAbout() {
+    _setUrl('/about');
+    _hideAll();
+    const aboutPage = document.getElementById('about-page');
+    if (aboutPage) aboutPage.hidden = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ── Populate Brands ticker (dynamic from API) ── */
+  async function populateBrandsTicker() {
+    const ticker = document.querySelector('.brands-ticker');
+    if (!ticker) return;
+    const brands = await API.getBrandsAsync();
+    if (!brands.length) return;
+    const spans = brands.map(b => `<span>${b.name}</span>`).join('');
+    ticker.innerHTML = spans + spans; // doubled for seamless infinite-scroll loop
+  }
+
+  /* ── Populate Brands nav dropdown (async — loads from backend) ── */
+  async function populateNavBrands() {
     const grid = document.getElementById('nav-brands-grid');
     if (!grid) return;
-    const brands = API.getBrands();
+    const brands = await API.getBrandsAsync();
     grid.innerHTML = brands.map(brand => {
       const letter = brand.name[0].toUpperCase();
       const avatar = brand.image
@@ -91,16 +135,72 @@ const App = (() => {
           <span class="nav-brand-name">${brand.name}</span>
         </a>`;
     }).join('');
+    /* also populate mobile brands sub-nav */
+    const mobBrands = document.getElementById('mobile-brands-list');
+    if (mobBrands) {
+      mobBrands.innerHTML = brands.map(b =>
+        `<a href="#" data-brand-nav="${b.name}">${b.name}</a>`
+      ).join('');
+    }
+  }
+
+  /* ── Populate dynamic Categories in nav and mobile ── */
+  async function populateNavCategories() {
+    const raw  = await API.getCategoriesAsync();
+    const cats = raw.map(c => typeof c === 'string' ? c : c.name);
+    /* desktop: Categories dropdown */
+    const desktopList = document.getElementById('nav-categories-list');
+    if (desktopList && cats.length) {
+      desktopList.innerHTML = cats.map(name =>
+        `<li><a href="#" data-filter="subcat:${name}">${name}</a></li>`
+      ).join('');
+    }
+    /* mobile: categories sub-nav */
+    const mobCatList = document.getElementById('mobile-cats-list');
+    if (mobCatList) {
+      mobCatList.innerHTML = cats.map(name =>
+        `<a href="#" data-filter="subcat:${name}">${name}</a>`
+      ).join('');
+    }
+  }
+
+  /* ── Wishlist page ── */
+  async function showWishlistPage() {
+    const wish = API.getWishlist();
+    if (!wish.length) { toast('Your wishlist is empty', 'error'); showHome(); return; }
+    _setUrl('/wishlist');
+    _hideAll();
+    const wishPage = document.getElementById('wishlist-page');
+    if (!wishPage) {
+      await showShop({}, 'My Wishlist', 'Wishlist');
+      return;
+    }
+    wishPage.hidden  = false;
+    _wishlistVisible = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const all  = await API.getProducts();
+    const ps   = all.filter(p => wish.includes(p.id));
+    const grid = document.getElementById('wishlist-grid');
+    if (grid) {
+      grid.innerHTML = ps.length
+        ? ps.map(p => Products.card(p, wish)).join('')
+        : `<div class="empty-state" style="grid-column:1/-1">
+             <span class="empty-icon">💔</span>
+             <h3>Your wishlist is empty</h3>
+             <p>Browse products and tap the heart icon to save favourites</p>
+           </div>`;
+    }
   }
 
   /* ── Brands page ── */
   async function showBrands() {
+    _setUrl('/brands');
     _hideAll();
     document.getElementById('brands-page').hidden = false;
     _brandsVisible = true;
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    const brands   = API.getBrands();
+    const brands   = await API.getBrandsAsync();
     const products = await API.getProducts();
     const grid     = document.getElementById('brands-grid');
 
@@ -239,11 +339,17 @@ const App = (() => {
       return;
     }
 
+    /* Buy Now button (product modal) */
+    const buyBtn = t.closest('[data-buy-id]');
+    if (buyBtn) {
+      Checkout.buyNow(Number(buyBtn.dataset.buyId));
+      return;
+    }
+
     /* Brand card click (brands page) */
     const brandCard = t.closest('[data-brand-select]');
     if (brandCard) {
-      const brand = brandCard.dataset.brandSelect;
-      showShop({ brand }, brand, 'Brand');
+      showShop({ brand: brandCard.dataset.brandSelect }, brandCard.dataset.brandSelect, 'Brand');
       return;
     }
 
@@ -264,20 +370,73 @@ const App = (() => {
       const idx  = wish.indexOf(id);
       if (idx > -1) wish.splice(idx, 1); else wish.push(id);
       API.saveWishlist(wish);
-      refreshHome();
       const inWish = wish.includes(id);
-      if (inWish) toast('Added to wishlist ❤️'); else toast('Removed from wishlist');
+      toast(inWish ? 'Added to wishlist ❤️' : 'Removed from wishlist');
       const countEl = document.getElementById('wishlist-count');
       countEl.textContent = wish.length;
       countEl.hidden = wish.length === 0;
+      if (_wishlistVisible) showWishlistPage(); else refreshHome();
       return;
     }
 
-    /* Add to cart */
-    const addBtn = t.closest('[data-add-id]');
-    if (addBtn && !addBtn.classList.contains('pd-add')) {
+    /* Quantity selector toggle */
+    const addQtyBtn = t.closest('[data-product-id].pcard-add-qty');
+    if (addQtyBtn) {
       e.preventDefault(); e.stopPropagation();
-      Cart.add(Number(addBtn.dataset.addId));
+      const productId = addQtyBtn.dataset.productId;
+      const card = addQtyBtn.closest('.pcard');
+      const selector = card?.querySelector('.pcard-qty-selector');
+      const addBtn = card?.querySelector('.pcard-add-qty');
+      if (selector && addBtn) {
+        addBtn.style.display = 'none';
+        selector.style.display = 'flex';
+      }
+      return;
+    }
+
+    /* Quantity +/- buttons */
+    const qtyBtn = t.closest('.pcard-qty-btn');
+    if (qtyBtn) {
+      e.preventDefault(); e.stopPropagation();
+      const input = qtyBtn.closest('.pcard-qty-selector')?.querySelector('.pcard-qty-input');
+      if (input) {
+        const action = qtyBtn.dataset.qtyAction;
+        let val = parseInt(input.value) || 1;
+        const max = parseInt(input.max) || 10;
+        if (action === 'plus') val = Math.min(val + 1, max);
+        if (action === 'minus') val = Math.max(val - 1, 1);
+        input.value = val;
+      }
+      return;
+    }
+
+    /* Add to cart (product cards + product modal) */
+    const addBtn = t.closest('[data-add-id]');
+    if (addBtn) {
+      e.preventDefault(); e.stopPropagation();
+      let qty = 1;
+      const input = addBtn.closest('.pcard-qty-selector')?.querySelector('.pcard-qty-input');
+      if (input) qty = parseInt(input.value) || 1;
+
+      const productId = Number(addBtn.dataset.addId);
+      Cart.add(productId, qty);
+
+      // Reset quantity selector if in card view
+      const selector = addBtn.closest('.pcard-qty-selector');
+      const addQtyBtn = addBtn.closest('.pcard')?.querySelector('.pcard-add-qty');
+      if (selector && addQtyBtn) {
+        selector.style.display = 'none';
+        addQtyBtn.style.display = 'flex';
+        if (input) input.value = '1';
+      }
+
+      if (addBtn.hasAttribute('data-close-modal')) closeProductModal();
+      return;
+    }
+
+    /* Cart checkout button */
+    if (t.closest('[data-cart-checkout]')) {
+      Cart.openCheckout();
       return;
     }
 
@@ -298,7 +457,7 @@ const App = (() => {
       e.preventDefault();
       const cat    = catLink.dataset.cat;
       const filter = catLink.dataset.filter;
-      let filters  = { cat };
+      const filters = { cat };
       if (filter) {
         const [key, val] = filter.split(':');
         filters[key] = val;
@@ -313,9 +472,13 @@ const App = (() => {
     const action = t.closest('[data-action]');
     if (action) {
       const act = action.dataset.action;
-      if (act === 'shop-all')    showShop({}, 'All Products', 'Shop');
+      if (act === 'shop-all') {
+        if (action.hasAttribute('data-close-cart')) closeCart();
+        showShop({}, 'All Products', 'Shop');
+      }
       if (act === 'view-brands') showBrands();
       if (act === 'show-brands') { showBrands(); toggleMobileMenu(false); }
+      if (act === 'show-about')  { e.preventDefault(); showAbout(); toggleMobileMenu(false); }
       return;
     }
 
@@ -355,11 +518,21 @@ const App = (() => {
   async function init() {
     API.init();
 
-    /* Render home sections */
+    /* Route: dispatch based on current URL, then render data */
+    await _dispatchRoute();
+    window.addEventListener('popstate', () => _dispatchRoute());
+
+    /* Render home sections (grids populate in background even if hidden) */
     await refreshHome();
 
     /* Populate Brands nav dropdown */
-    populateNavBrands();
+    await populateNavBrands();
+
+    /* Populate Brands ticker from stored brands */
+    await populateBrandsTicker();
+
+    /* Populate Categories nav dropdown */
+    await populateNavCategories();
 
     /* Apply hero background if set */
     applyHeroBg();
@@ -384,15 +557,27 @@ const App = (() => {
       else window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
+    /* Home nav link */
+    document.getElementById('nav-home-link')?.addEventListener('click', e => {
+      e.preventDefault();
+      showHome();
+      toggleMobileMenu(false);
+    });
+
     /* Cart */
     document.getElementById('cart-btn').addEventListener('click', Cart.open);
     document.getElementById('cart-close').addEventListener('click', closeCart);
     document.getElementById('drawer-overlay').addEventListener('click', closeCart);
 
-    /* Modals close */
-    document.getElementById('product-overlay').addEventListener('click', closeProductModal);
+    /* Modals close — prevent closing when clicking inside modal */
+    document.getElementById('product-overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('product-overlay')) closeProductModal();
+    });
     document.getElementById('product-modal-close').addEventListener('click', closeProductModal);
-    document.getElementById('checkout-overlay').addEventListener('click', closeCheckoutModal);
+
+    document.getElementById('checkout-overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('checkout-overlay')) closeCheckoutModal();
+    });
     document.getElementById('checkout-modal-close').addEventListener('click', closeCheckoutModal);
 
     /* Admin — open panel (index.html only; admin.html navigates directly) */
@@ -404,16 +589,10 @@ const App = (() => {
     }
 
     /* Wishlist panel */
-    document.getElementById('wishlist-btn').addEventListener('click', () => {
-      const wish = API.getWishlist();
-      if (!wish.length) { toast('Your wishlist is empty', 'error'); return; }
-      showShop({ search: '' }, 'Wishlist', 'Your Wishlist').then(() => {
-        API.getProducts().then(all => {
-          const ps   = all.filter(p => wish.includes(p.id));
-          const grid = document.getElementById('shop-grid');
-          grid.innerHTML = ps.map(p => Products.card(p, wish)).join('');
-        });
-      });
+    document.getElementById('wishlist-btn').addEventListener('click', showWishlistPage);
+    document.getElementById('mobile-wishlist-btn')?.addEventListener('click', () => {
+      toggleMobileMenu(false);
+      showWishlistPage();
     });
 
     /* Mobile menu */
@@ -483,6 +662,38 @@ const App = (() => {
     /* Brands back button */
     document.getElementById('brands-back').addEventListener('click', showHome);
 
+    /* Wishlist back button */
+    document.getElementById('wishlist-back')?.addEventListener('click', showHome);
+
+    /* About back button */
+    document.getElementById('about-back')?.addEventListener('click', showHome);
+
+    /* Mobile cart button */
+    document.getElementById('mobile-cart-btn')?.addEventListener('click', () => {
+      toggleMobileMenu(false);
+      Cart.open();
+    });
+
+    /* Mobile home link */
+    document.getElementById('mobile-home-link')?.addEventListener('click', e => {
+      e.preventDefault();
+      showHome();
+      toggleMobileMenu(false);
+    });
+
+    /* Mobile search */
+    const mobileSearch = document.getElementById('mobile-search-input');
+    if (mobileSearch) {
+      mobileSearch.addEventListener('input', () => handleSearch(mobileSearch.value));
+      mobileSearch.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && mobileSearch.value.trim()) {
+          showShop({ search: mobileSearch.value }, `"${mobileSearch.value}"`, 'Search');
+          document.getElementById('search-results').hidden = true;
+          toggleMobileMenu(false);
+        }
+      });
+    }
+
     /* Delegated clicks */
     document.addEventListener('click', handleClick);
 
@@ -510,6 +721,8 @@ const App = (() => {
     showShop,
     showHome,
     showBrands,
+    showWishlistPage,
+    showAbout,
     applyHeroBg,
     closeCart,
     closeProductModal,

@@ -178,6 +178,108 @@
     .toast.success { background: var(--ok); }
     .toast.error   { background: var(--err); }
 
+    /* ── Order filters ── */
+    .order-filters {
+      display: flex; flex-wrap: wrap; gap: 0.625rem; margin-bottom: 1rem;
+    }
+    .order-filter-input {
+      flex: 1; min-width: 140px;
+      padding: 0.5rem 0.75rem;
+      border: 1.5px solid var(--n-200); border-radius: var(--r-md);
+      font-size: 0.8125rem; font-family: inherit; outline: none;
+      background: var(--white); color: var(--n-900);
+      transition: border-color var(--t-fast);
+    }
+    .order-filter-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(20,85,164,.07); }
+
+    /* ── Brand admin grid ── */
+    .brand-admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+    .brand-admin-card {
+      background: var(--white);
+      border: 1.5px solid var(--n-200); border-radius: var(--r-lg);
+      padding: 1.25rem 1rem 1rem;
+      display: flex; flex-direction: column; align-items: center; gap: 0.625rem;
+      text-align: center;
+      transition: border-color var(--t-fast), box-shadow var(--t-fast);
+    }
+    .brand-admin-card:hover { border-color: var(--blue-l); box-shadow: 0 4px 16px rgba(20,85,164,.1); }
+    .brand-admin-card--edit { align-items: stretch; text-align: left; }
+    .brand-admin-img {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--blue-xl); border: 1.5px solid var(--blue-l);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .brand-admin-name { font-size: 0.875rem; font-weight: 700; color: var(--n-800); }
+    .brand-admin-actions { display: flex; gap: 0.375rem; }
+
+    /* ── Image upload group ── */
+    .img-upload-group {
+      display: flex; gap: 0.5rem; align-items: stretch;
+      margin-bottom: 0.375rem;
+    }
+    .img-upload-group input[type="url"] {
+      flex: 1; padding: 0.5625rem 0.75rem;
+      border: 1.5px solid var(--n-200); border-radius: var(--r-md);
+      font-size: 0.8125rem; font-family: inherit; outline: none;
+      background: var(--white); color: var(--n-900);
+      transition: border-color var(--t-fast);
+    }
+    .img-upload-group input[type="url"]:focus { border-color: var(--blue); }
+    .img-upload-file-btn {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      padding: 0.5rem 0.875rem;
+      background: var(--n-100); border: 1.5px solid var(--n-200); border-radius: var(--r-md);
+      font-size: 0.75rem; font-weight: 600; color: var(--n-700);
+      cursor: pointer; white-space: nowrap;
+      transition: background var(--t-fast), border-color var(--t-fast);
+    }
+    .img-upload-file-btn:hover { background: var(--blue-xl); border-color: var(--blue-l); color: var(--blue); }
+
+    /* ── Product form helpers ── */
+    .admin-section-label {
+      font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--n-500);
+      margin-bottom: 0.625rem; margin-top: 0.25rem;
+    }
+    .flag-label {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.8125rem; font-weight: 500; color: var(--n-700);
+      cursor: pointer; user-select: none;
+    }
+    .flag-label input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--blue); }
+    .visibility-flag { padding: 0.375rem 0.75rem; background: var(--blue-xl); border-radius: var(--r-pill); color: var(--blue-d); }
+
+    /* ── btn-sm ── */
+    .btn-sm { padding: 0.3rem 0.625rem !important; font-size: 0.6875rem !important; }
+
+    /* ── form-group & form-row (scoped to admin) ── */
+    .form-group { margin-bottom: 0.875rem; }
+    .form-group label {
+      display: block; font-size: 0.6875rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--n-700); margin-bottom: 0.3rem;
+    }
+    .form-group input:not([type="checkbox"]),
+    .form-group select,
+    .form-group textarea {
+      width: 100%; padding: 0.5625rem 0.75rem;
+      border: 1.5px solid var(--n-200); border-radius: var(--r-md);
+      font-size: 0.8125rem; font-family: inherit; outline: none;
+      color: var(--n-900); background: var(--white);
+      transition: border-color var(--t-fast);
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--blue); box-shadow: 0 0 0 3px rgba(20,85,164,.07);
+    }
+    .form-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem;
+    }
+
     /* Responsive */
     @media (max-width: 700px) {
       .admin-page-body { flex-direction: column; }

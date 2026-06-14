@@ -14,16 +14,16 @@ const Cart = (() => {
   }
 
   /* ── add ── */
-  async function add(id) {
+  async function add(id, qty = 1) {
     const p = await API.getProduct(id);
     if (!p) return;
     const cart = API.getCart();
     const ex   = cart.find(c => c.id === id);
     if (ex) {
-      ex.qty++;
+      ex.qty += qty;
     } else {
       cart.push({
-        id, qty: 1,
+        id, qty,
         name: p.name, brand: p.brand, price: p.price,
         emoji: p.emoji, subcat: p.subcat, imageMain: p.imageMain || null,
       });
@@ -31,7 +31,7 @@ const Cart = (() => {
     API.saveCart(cart);
     updateBadge();
     render();
-    App.toast(`${p.name} added to cart`, 'success');
+    App.toast(`${p.name} added to cart (qty: ${qty})`, 'success');
   }
 
   /* ── remove ── */
@@ -64,7 +64,7 @@ const Cart = (() => {
           <h3>Your cart is empty</h3>
           <p>Add something beautiful</p>
           <button class="btn btn-primary btn-sm" style="margin-top:.75rem"
-            onclick="App.closeCart();App.showShop({})">Browse Products</button>
+            data-action="shop-all" data-close-cart>Browse Products</button>
         </div>`;
       if (foot) foot.innerHTML = '';
       return;
@@ -101,7 +101,7 @@ const Cart = (() => {
         <strong>KES ${sub.toLocaleString()}</strong>
       </div>
       <div class="cart-delivery-note">🛵 Delivery calculated at checkout</div>
-      <button class="checkout-btn" onclick="Cart.openCheckout()">
+      <button class="checkout-btn" data-cart-checkout>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
         </svg>

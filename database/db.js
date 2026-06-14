@@ -57,12 +57,20 @@ db.exec(`
     customer     TEXT    NOT NULL DEFAULT '{}'
   );
 
+  CREATE TABLE IF NOT EXISTS main_categories (
+    id    INTEGER PRIMARY KEY,
+    slug  TEXT    NOT NULL UNIQUE,
+    name  TEXT    NOT NULL,
+    image TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS accounts (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     name          TEXT    NOT NULL,
     phone         TEXT    NOT NULL UNIQUE,
     email         TEXT    NOT NULL DEFAULT '',
-    password_hash TEXT    NOT NULL,
+    role          TEXT    NOT NULL DEFAULT 'customer',
+    password_hash TEXT    NOT NULL DEFAULT '',
     created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 `);
@@ -148,8 +156,21 @@ function seedProducts() {
   run();
 }
 
+function seedMainCategories() {
+  const count = db.prepare('SELECT COUNT(*) AS n FROM main_categories').get().n;
+  if (count > 0) return;
+  const ins = db.prepare('INSERT OR IGNORE INTO main_categories (id, slug, name, image) VALUES (?, ?, ?, NULL)');
+  ins.run(1, 'perfume', 'Perfume');
+  ins.run(2, 'hair',    'Hair Care');
+  ins.run(3, 'body',    'Body Care');
+}
+
+/* ── Migrate: add role column to existing accounts tables ── */
+try { db.exec("ALTER TABLE accounts ADD COLUMN role TEXT NOT NULL DEFAULT 'customer'"); } catch {}
+
 seedBrands();
 seedCategories();
+seedMainCategories();
 seedProducts();
 
 module.exports = db;
