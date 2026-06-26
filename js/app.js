@@ -594,6 +594,9 @@ const App = (() => {
   async function init() {
     API.init();
 
+    /* Auth (customer sign-in) */
+    if (typeof Auth !== 'undefined') Auth.init();
+
     /* Route: dispatch based on current URL, then render data */
     await _dispatchRoute();
     window.addEventListener('popstate', () => _dispatchRoute());

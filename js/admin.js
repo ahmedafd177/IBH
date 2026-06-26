@@ -56,7 +56,15 @@ const Admin = (() => {
     const pending = allOrders.filter(o => ['pending', 'confirmed'].includes(o.status)).length;
     const orders  = applyOrderFilters(allOrders);
 
+    const user = window.AdminUser || {};
+    const branchBanner = user.role === 'branch_manager'
+      ? `<div style="background:var(--blue-xl);border:1.5px solid var(--blue-l);border-radius:var(--r-md);padding:.625rem 1rem;margin-bottom:1rem;font-size:.8125rem;font-weight:600;color:var(--blue-d)">
+           📍 Branch: ${user.branch || '—'} — You can only see orders assigned to your branch.
+         </div>`
+      : '';
+
     return `
+      ${branchBanner}
       <div class="admin-stats">
         <div class="admin-stat"><div class="admin-stat-icon">📦</div><div class="admin-stat-num">${allOrders.length}</div><div class="admin-stat-label">Total Orders</div></div>
         <div class="admin-stat"><div class="admin-stat-icon">💰</div><div class="admin-stat-num">KES ${rev.toLocaleString()}</div><div class="admin-stat-label">Revenue</div></div>
@@ -86,7 +94,7 @@ const Admin = (() => {
           <table class="admin-table">
             <thead><tr>
               <th>#</th><th>Order ID</th><th>Customer</th><th>Items</th>
-              <th>Total</th><th>Payment</th><th>Status</th><th>Update</th><th>Actions</th>
+              <th>Total</th><th>Payment</th><th>Branch</th><th>Status</th><th>Update</th><th>Actions</th>
             </tr></thead>
             <tbody id="orders-tbody">
               ${buildOrdersRows(orders)}
@@ -97,7 +105,10 @@ const Admin = (() => {
   }
 
   function buildOrdersRows(orders) {
-    if (!orders.length) return `<tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--n-400)">No orders match the current filters.</td></tr>`;
+    if (!orders.length) return `<tr><td colspan="10" style="text-align:center;padding:2.5rem;color:var(--n-400)">No orders match the current filters.</td></tr>`;
+    const user    = window.AdminUser || {};
+    const isAdmin = user.role !== 'branch_manager';
+    const branches = (window.Config?.BRANCHES || []).map(b => b.name);
     return orders.map((o, idx) => `
       <tr>
         <td style="color:var(--n-400);font-size:.75rem;font-weight:600">${idx + 1}</td>
@@ -119,6 +130,14 @@ const Admin = (() => {
         <td>
           <span class="pill ${o.payment === 'mpesa' ? 'pill-confirmed' : o.payment === 'cod' ? 'pill-pending' : 'pill-processing'}"
             style="font-size:.6rem;text-transform:uppercase">${o.payment || '—'}</span>
+        </td>
+        <td>
+          ${isAdmin
+            ? `<select class="status-select branch-select" data-branch-order-id="${o.id}" style="font-size:.7rem;padding:.25rem .4rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);outline:none;max-width:110px">
+                <option value="">Unassigned</option>
+                ${branches.map(b => `<option${b === o.branch ? ' selected' : ''}>${b}</option>`).join('')}
+               </select>`
+            : `<span style="font-size:.75rem;color:var(--n-600)">${o.branch || '—'}</span>`}
         </td>
         <td><span class="pill pill-${o.status}">${o.status}</span></td>
         <td>
@@ -399,47 +418,47 @@ const Admin = (() => {
         </div>
 
         <!-- Details -->
-        <p class="admin-section-label" style="margin-top:.5rem">Product Details</p>
+        <p class="admin-section-label" style="margin-top:.5rem">Product Details <span style="font-size:.6875rem;font-weight:400;color:var(--err)">* required</span></p>
         <div class="form-row">
-          <div class="form-group"><label>Product Name</label><input id="ap-name" type="text" placeholder="Dior Sauvage 100ml" value="${v('name')}"></div>
-          <div class="form-group"><label>Brand</label>
-            <select id="ap-brand"><option value="">Select Brand</option>${selBrand}</select>
+          <div class="form-group"><label>Product Name <span style="color:var(--err)">*</span></label><input id="ap-name" type="text" placeholder="Dior Sauvage 100ml" value="${v('name')}" required></div>
+          <div class="form-group"><label>Brand <span style="color:var(--err)">*</span></label>
+            <select id="ap-brand" required><option value="">Select Brand</option>${selBrand}</select>
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Category</label>
-            <select id="ap-cat">
+          <div class="form-group"><label>Category <span style="color:var(--err)">*</span></label>
+            <select id="ap-cat" required>
               <option value="">Select</option>
               <option value="perfume"${v('cat') === 'perfume' ? ' selected' : ''}>Perfume</option>
               <option value="hair"${v('cat') === 'hair' ? ' selected' : ''}>Hair Care</option>
               <option value="body"${v('cat') === 'body' ? ' selected' : ''}>Body Care</option>
             </select>
           </div>
-          <div class="form-group"><label>Subcategory</label>
-            <select id="ap-subcat"><option value="">Select</option>${selCat}</select>
+          <div class="form-group"><label>Subcategory <span style="color:var(--err)">*</span></label>
+            <select id="ap-subcat" required><option value="">Select</option>${selCat}</select>
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Gender</label>
-            <select id="ap-gender">
+          <div class="form-group"><label>Gender <span style="color:var(--err)">*</span></label>
+            <select id="ap-gender" required>
               <option value="">Select</option>
               ${['Male','Female','Unisex','Children','All'].map(g =>
                 `<option${g === v('gender') ? ' selected' : ''}>${g}</option>`).join('')}
             </select>
           </div>
-          <div class="form-group"><label>Emoji Icon <span style="font-weight:400;color:var(--n-400)">(fallback)</span></label>
+          <div class="form-group"><label>Emoji Icon <span style="font-weight:400;color:var(--n-400)">(fallback, optional)</span></label>
             <input id="ap-emoji" type="text" placeholder="🌸" maxlength="4" value="${v('emoji')}">
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Price (KES)</label><input id="ap-price" type="number" min="0" placeholder="5000" value="${v('price')}"></div>
-          <div class="form-group"><label>Old Price (KES, optional)</label><input id="ap-old-price" type="number" min="0" placeholder="Leave blank if no discount" value="${v('oldPrice') || ''}"></div>
+          <div class="form-group"><label>Price (KES) <span style="color:var(--err)">*</span></label><input id="ap-price" type="number" min="0" placeholder="5000" value="${v('price')}" required></div>
+          <div class="form-group"><label>Old Price (KES) <span style="font-weight:400;color:var(--n-400)">(optional, for discount)</span></label><input id="ap-old-price" type="number" min="0" placeholder="Leave blank if no discount" value="${v('oldPrice') || ''}"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Stock</label><input id="ap-stock" type="number" min="0" placeholder="10" value="${v('stock')}"></div>
-          <div class="form-group"><label>Sizes (comma separated)</label><input id="ap-sizes" type="text" placeholder="50ml, 100ml" value="${prefill?.sizes?.join(', ') || ''}"></div>
+          <div class="form-group"><label>Stock <span style="color:var(--err)">*</span></label><input id="ap-stock" type="number" min="0" placeholder="10" value="${v('stock')}" required></div>
+          <div class="form-group"><label>Sizes <span style="font-weight:400;color:var(--n-400)">(comma separated, optional)</span></label><input id="ap-sizes" type="text" placeholder="50ml, 100ml" value="${prefill?.sizes?.join(', ') || ''}"></div>
         </div>
-        <div class="form-group"><label>Description</label><textarea id="ap-desc" rows="3" placeholder="Brief product description…" style="resize:vertical">${v('desc')}</textarea></div>
+        <div class="form-group"><label>Description <span style="color:var(--err)">*</span></label><textarea id="ap-desc" rows="3" placeholder="Brief product description…" style="resize:vertical" required>${v('desc')}</textarea></div>
 
         <!-- Flags -->
         <div class="form-group">
@@ -488,10 +507,20 @@ const Admin = (() => {
           <div class="form-group" style="margin:0"><label>Email</label><input id="nu-email" type="email" placeholder="jane@ibh.co.ke"></div>
           <div class="form-group" style="margin:0">
             <label>Role</label>
-            <select id="nu-role">
+            <select id="nu-role" onchange="document.getElementById('nu-branch-wrap').style.display=this.value==='branch_manager'?'':'none'">
               <option value="customer">Customer</option>
               <option value="staff">Staff</option>
+              <option value="branch_manager">Branch Manager</option>
               <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div id="nu-branch-wrap" style="display:none;margin-top:.625rem">
+          <div class="form-group" style="margin:0">
+            <label>Branch</label>
+            <select id="nu-branch">
+              <option value="">Select branch…</option>
+              ${(window.Config?.BRANCHES || []).map(b => `<option value="${b.name}">${b.name}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -509,7 +538,7 @@ const Admin = (() => {
             <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Role</th><th>Orders</th><th>Total Spent</th><th>Last Order</th><th>Actions</th></tr></thead>
             <tbody id="users-tbody">
               ${users.length ? users.map((u, i) => `
-                <tr data-user-id="${u.id}" data-user-phone="${u.phone}">
+                <tr data-user-id="${u.id}" data-user-phone="${u.phone}" data-user-branch="${u.branch || ''}">
                   <td style="color:var(--n-400);font-size:.75rem">${i + 1}</td>
                   <td><strong>${u.name}</strong></td>
                   <td>${u.phone}</td>
@@ -1168,13 +1197,15 @@ const Admin = (() => {
 
       /* Create user */
       document.getElementById('create-user-btn')?.addEventListener('click', async () => {
-        const name  = document.getElementById('nu-name').value.trim();
-        const phone = document.getElementById('nu-phone').value.trim();
-        const email = document.getElementById('nu-email').value.trim();
-        const role  = document.getElementById('nu-role').value;
+        const name   = document.getElementById('nu-name').value.trim();
+        const phone  = document.getElementById('nu-phone').value.trim();
+        const email  = document.getElementById('nu-email').value.trim();
+        const role   = document.getElementById('nu-role').value;
+        const branch = document.getElementById('nu-branch')?.value || '';
         if (!name || !phone) { App.toast('Name and phone required', 'error'); return; }
+        if (role === 'branch_manager' && !branch) { App.toast('Select a branch for Branch Manager', 'error'); return; }
         try {
-          await API.createUser({ name, phone, email, role });
+          await API.createUser({ name, phone, email, role, branch });
           App.toast(`User "${name}" created`, 'success');
           switchTab('users');
         } catch (e) {
@@ -1185,13 +1216,17 @@ const Admin = (() => {
       /* Edit user — inline row form */
       c.querySelectorAll('[data-edit-user]').forEach(btn => {
         btn.addEventListener('click', () => {
-          const id  = btn.dataset.editUser;
-          const row = btn.closest('tr');
+          const id     = btn.dataset.editUser;
+          const row    = btn.closest('tr');
           if (!row) return;
-          const name  = row.querySelector('td:nth-child(2)')?.textContent.trim() || '';
-          const phone = row.dataset.userPhone || '';
-          const email = row.querySelector('td:nth-child(4)')?.textContent.trim().replace('—','') || '';
-          const role  = row.querySelector('.pill')?.textContent.trim().toLowerCase() || 'customer';
+          const name   = row.querySelector('td:nth-child(2)')?.textContent.trim() || '';
+          const phone  = row.dataset.userPhone || '';
+          const email  = row.querySelector('td:nth-child(4)')?.textContent.trim().replace('—','') || '';
+          const role   = row.querySelector('.pill')?.textContent.trim().toLowerCase().replace(' ','_') || 'customer';
+          const branch = row.dataset.userBranch || '';
+          const branchOptions = (window.Config?.BRANCHES || [])
+            .map(b => `<option value="${b.name}"${b.name === branch ? ' selected' : ''}>${b.name}</option>`).join('');
+
           row.innerHTML = `
             <td colspan="9">
               <div style="display:flex;gap:.625rem;align-items:flex-end;flex-wrap:wrap;padding:.5rem 0">
@@ -1205,10 +1240,18 @@ const Admin = (() => {
                 </div>
                 <div class="form-group" style="margin:0">
                   <label>Role</label>
-                  <select class="eu-role" style="padding:.4rem .625rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem">
-                    <option value="customer" ${role==='customer'?'selected':''}>Customer</option>
-                    <option value="staff"    ${role==='staff'   ?'selected':''}>Staff</option>
-                    <option value="admin"    ${role==='admin'   ?'selected':''}>Admin</option>
+                  <select class="eu-role" style="padding:.4rem .625rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem"
+                    onchange="this.closest('div').querySelector('.eu-branch-wrap').style.display=this.value==='branch_manager'?'':'none'">
+                    <option value="customer"       ${role==='customer'       ?'selected':''}>Customer</option>
+                    <option value="staff"          ${role==='staff'          ?'selected':''}>Staff</option>
+                    <option value="branch_manager" ${role==='branch_manager' ?'selected':''}>Branch Manager</option>
+                    <option value="admin"          ${role==='admin'          ?'selected':''}>Admin</option>
+                  </select>
+                </div>
+                <div class="eu-branch-wrap form-group" style="margin:0;display:${role==='branch_manager'?'':'none'}">
+                  <label>Branch</label>
+                  <select class="eu-branch" style="padding:.4rem .625rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem">
+                    <option value="">Select…</option>${branchOptions}
                   </select>
                 </div>
                 <div style="display:flex;gap:.375rem">
@@ -1219,10 +1262,16 @@ const Admin = (() => {
               </div>
             </td>`;
           row.querySelector('.eu-save-btn').addEventListener('click', async () => {
+            const newRole = row.querySelector('.eu-role').value;
+            const newBranch = row.querySelector('.eu-branch')?.value || '';
+            if (newRole === 'branch_manager' && !newBranch) {
+              App.toast('Select a branch for Branch Manager', 'error'); return;
+            }
             try {
-              await API.updateUserRole(id, row.querySelector('.eu-role').value, {
-                name:  row.querySelector('.eu-name').value.trim(),
-                email: row.querySelector('.eu-email').value.trim(),
+              await API.updateUserRole(id, newRole, {
+                name:   row.querySelector('.eu-name').value.trim(),
+                email:  row.querySelector('.eu-email').value.trim(),
+                branch: newBranch,
               });
               App.toast('User updated', 'success');
               switchTab('users');
@@ -1377,6 +1426,25 @@ const Admin = (() => {
       sel.addEventListener('change', async () => {
         await API.updateOrderStatus(sel.dataset.orderId, sel.value);
         App.toast('Status updated', 'success');
+      });
+    });
+
+    /* Branch assignment (admin only) */
+    c?.querySelectorAll('.branch-select[data-branch-order-id]').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const id     = sel.dataset.branchOrderId;
+        const branch = sel.value || null;
+        try {
+          await fetch(`${Config.BASE_URL}/orders/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('ibh_session')}`,
+            },
+            body: JSON.stringify({ branch }),
+          });
+          App.toast('Branch assigned', 'success');
+        } catch { App.toast('Failed to assign branch', 'error'); }
       });
     });
     c?.querySelectorAll('[data-invoice]').forEach(btn => {

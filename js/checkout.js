@@ -61,7 +61,15 @@ const Checkout = (() => {
 
   /* ── helpers ── */
   function _savedUser() {
-    try { return JSON.parse(localStorage.getItem('ibh_account')) || null; } catch { return null; }
+    try {
+      /* 1. Checkout-specific account (guest / checkout login) */
+      const co = JSON.parse(localStorage.getItem('ibh_account')) || null;
+      if (co) return co;
+      /* 2. Fall back to Auth module session (header sign-in) */
+      const au = JSON.parse(localStorage.getItem('ibh_user')) || null;
+      if (au) return { type: 'account', name: au.name, phone: au.phone || '', email: au.email || '' };
+      return null;
+    } catch { return null; }
   }
   function _sub() { return _items.reduce((s, c) => s + c.price * c.qty, 0); }
 
@@ -577,6 +585,12 @@ const Checkout = (() => {
         e.stopPropagation();
         _user = null;
         localStorage.removeItem('ibh_account');
+        /* Also sign out of Auth session so header updates */
+        if (typeof Auth !== 'undefined') Auth.signOut();
+        else {
+          localStorage.removeItem('ibh_session');
+          localStorage.removeItem('ibh_user');
+        }
         _step = 1;
         _render();
       });
@@ -678,6 +692,13 @@ const Checkout = (() => {
             return;
           }
           _user = { type: 'account', name, phone, email };
+          /* Sync auth session so header shows user name */
+          if (data.token) {
+            localStorage.setItem('ibh_session', data.token);
+            localStorage.setItem('ibh_user', JSON.stringify({ name, phone, email, role: data.role }));
+            document.getElementById('auth-btn-label') && (document.getElementById('auth-btn-label').textContent = name.split(' ')[0]);
+            document.getElementById('auth-btn-label') && (document.getElementById('auth-btn-label').style.display = '');
+          }
         } catch (err) {
           App.toast('Network error — try again', 'error');
           if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; }
@@ -719,6 +740,13 @@ const Checkout = (() => {
           return;
         }
         _user = { type: 'account', name: data.name, phone, email: data.email };
+        /* Sync auth session so header shows user name */
+        if (data.token) {
+          localStorage.setItem('ibh_session', data.token);
+          localStorage.setItem('ibh_user', JSON.stringify({ name: data.name, phone, email: data.email, role: data.role }));
+          document.getElementById('auth-btn-label') && (document.getElementById('auth-btn-label').textContent = data.name.split(' ')[0]);
+          document.getElementById('auth-btn-label') && (document.getElementById('auth-btn-label').style.display = '');
+        }
       } catch (err) {
         App.toast('Network error — try again', 'error');
         if (btn) { btn.disabled = false; btn.textContent = 'Sign In →'; }
@@ -764,13 +792,33 @@ const Checkout = (() => {
     });
   }
 
-  function _onGoogle(response) {
+  async function _onGoogle(response) {
     document.getElementById('g-popup')?.remove();
     try {
+      /* Decode JWT payload client-side for quick display */
       const b64 = response.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
       const p   = JSON.parse(atob(b64));
       _user = { type: 'google', name: p.name, email: p.email, phone: '', picture: p.picture || '' };
       localStorage.setItem('ibh_account', JSON.stringify(_user));
+
+      /* Verify with server and get a proper session token */
+      if (!Config.USE_LOCAL_STORAGE) {
+        try {
+          const r    = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential: response.credential }),
+          });
+          const data = await r.json();
+          if (r.ok && data.token) {
+            localStorage.setItem('ibh_session', data.token);
+            localStorage.setItem('ibh_user', JSON.stringify({ name: data.name, phone: data.phone || '', email: data.email, role: data.role }));
+            document.getElementById('auth-btn-label') && (document.getElementById('auth-btn-label').textContent = data.name.split(' ')[0]);
+            document.getElementById('auth-btn-label') && (document.getElementById('auth-btn-label').style.display = '');
+          }
+        } catch {}
+      }
+
       App.toast(`Signed in as ${_user.name.split(' ')[0]} ✓`, 'success');
       _step = 2; _render();
     } catch { App.toast('Google Sign-In failed — try again', 'error'); }

@@ -120,11 +120,42 @@ function seedMainCategories() {
   ins.run(3, 'body',    'Body Care');
 }
 
-/* ── Migrate: add role column to existing accounts tables ── */
-try { db.exec("ALTER TABLE accounts ADD COLUMN role TEXT NOT NULL DEFAULT 'customer'"); } catch {}
+/* ── Migrations ── */
+try { db.exec("ALTER TABLE accounts ADD COLUMN role   TEXT NOT NULL DEFAULT 'customer'"); } catch {}
+try { db.exec("ALTER TABLE accounts ADD COLUMN branch TEXT"); }                            catch {}
+try { db.exec("ALTER TABLE orders   ADD COLUMN branch TEXT"); }                            catch {}
+
+/* ── Sessions table ── */
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sessions (
+    id         TEXT    PRIMARY KEY,
+    account_id INTEGER NOT NULL,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    expires_at TEXT    NOT NULL
+  );
+`);
+
+/* ── Clean expired sessions on startup ── */
+db.prepare("DELETE FROM sessions WHERE expires_at <= datetime('now')").run();
 
 seedBrands();
 seedCategories();
 seedMainCategories();
+
+/* ── Seed admin user ── */
+const { createHash } = require('crypto');
+const _h = pw => createHash('sha256').update(pw + 'ibh-2025').digest('hex');
+
+(function seedAdmin() {
+  const email = 'ahmedafd180@gmail.com';
+  const existing = db.prepare('SELECT id FROM accounts WHERE LOWER(email) = ?').get(email);
+  if (existing) {
+    db.prepare("UPDATE accounts SET role = 'admin', password_hash = ? WHERE LOWER(email) = ?")
+      .run(_h('Admin@123'), email);
+  } else {
+    db.prepare('INSERT OR IGNORE INTO accounts (name, phone, email, role, password_hash) VALUES (?, ?, ?, ?, ?)')
+      .run('Ahmed', email, email, 'admin', _h('Admin@123'));
+  }
+})();
 
 module.exports = db;

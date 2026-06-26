@@ -289,6 +289,65 @@
       .admin-content { padding: 1rem; }
       .admin-stats { grid-template-columns: repeat(2, 1fr); }
     }
+
+    /* ── Login gate ── */
+    #admin-login-screen {
+      position: fixed; inset: 0; z-index: 10000;
+      background: linear-gradient(135deg, var(--blue-d) 0%, var(--blue) 60%, var(--blue-l) 100%);
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .login-card {
+      background: var(--white); border-radius: var(--r-2xl);
+      width: 100%; max-width: 420px; padding: 2.5rem 2rem;
+      box-shadow: 0 24px 64px rgba(12,56,116,.35);
+    }
+    .login-field {
+      width: 100%; padding: .6875rem .875rem;
+      border: 1.5px solid var(--n-200); border-radius: var(--r-md);
+      font-size: .9375rem; font-family: inherit; outline: none;
+      color: var(--n-900); background: var(--white);
+      transition: border-color var(--t-fast), box-shadow var(--t-fast);
+      box-sizing: border-box;
+    }
+    .login-field:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(20,85,164,.1); }
+    .login-submit {
+      width: 100%; padding: .8125rem; background: var(--blue); color: #fff;
+      border: none; border-radius: var(--r-md);
+      font-size: .9375rem; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: background var(--t-fast);
+    }
+    .login-submit:hover:not(:disabled) { background: var(--blue-d); }
+    .login-submit:disabled { opacity: .6; cursor: default; }
+    .login-divider {
+      display: flex; align-items: center; gap: .75rem; margin: 1.25rem 0;
+    }
+    .login-divider::before, .login-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--n-200);
+    }
+    .login-divider span { font-size: .75rem; color: var(--n-400); font-weight: 500; }
+
+    /* User badge in header */
+    .admin-user-badge {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .3rem .75rem; background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3); border-radius: var(--r-pill);
+      font-size: .75rem; color: rgba(255,255,255,.9);
+    }
+    .admin-user-badge strong { font-weight: 700; }
+    .admin-user-role {
+      background: rgba(255,255,255,.2); padding: .1rem .4rem;
+      border-radius: var(--r-pill); font-size: .625rem; text-transform: uppercase;
+      letter-spacing: .06em; font-weight: 700;
+    }
+    .admin-logout-btn {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .4rem .875rem; background: rgba(220,38,38,.25);
+      border: 1px solid rgba(220,38,38,.4); border-radius: var(--r-pill);
+      color: #fca5a5; font-size: .75rem; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: background var(--t-fast);
+    }
+    .admin-logout-btn:hover { background: rgba(220,38,38,.4); }
   </style>
 </head>
 <body>
@@ -299,10 +358,21 @@
     <img src="assets/images/logo.jpeg" alt="IBH" />
     <h1>Admin Dashboard</h1>
   </div>
-  <a href="index.html" class="admin-back-btn">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    Back to Store
-  </a>
+  <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+    <div class="admin-user-badge" id="admin-user-badge" style="display:none">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <strong id="admin-user-name"></strong>
+      <span class="admin-user-role" id="admin-user-role"></span>
+    </div>
+    <button class="admin-logout-btn" id="admin-logout-btn" style="display:none" onclick="AdminGate.logout()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </button>
+    <a href="index.html" class="admin-back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Store
+    </a>
+  </div>
 </header>
 
 <!-- PAGE BODY -->
@@ -354,6 +424,61 @@
 <!-- TOAST -->
 <div class="toast-container" id="toast-container" aria-live="polite" role="status"></div>
 
+<!-- LOGIN GATE — covers everything until authenticated -->
+<div id="admin-login-screen">
+  <div class="login-card">
+
+    <!-- Loading spinner (shown during session check) -->
+    <div id="login-loading" style="text-align:center;padding:1.5rem 0">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="animation:spin 1s linear infinite">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      <p style="margin-top:.75rem;font-size:.875rem;color:var(--n-500)">Checking session…</p>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+    </div>
+
+    <!-- Login form (hidden initially, shown if no valid session) -->
+    <div id="login-content" style="display:none">
+      <!-- Logo -->
+      <div style="text-align:center;margin-bottom:2rem">
+        <img src="assets/images/logo.jpeg" alt="IBH"
+          style="width:60px;height:60px;border-radius:var(--r-lg);object-fit:contain;margin-bottom:.875rem"
+          onerror="this.style.display='none'">
+        <h2 style="font-family:var(--f-display);font-size:1.375rem;font-weight:700;color:var(--blue-d);margin:0">Admin Dashboard</h2>
+        <p style="font-size:.8125rem;color:var(--n-500);margin:.25rem 0 0">Sign in to manage your store</p>
+      </div>
+
+      <!-- Error message -->
+      <div id="login-error" style="display:none;background:var(--err-bg);color:var(--err);padding:.75rem 1rem;border-radius:var(--r-md);font-size:.8125rem;font-weight:500;margin-bottom:1.25rem"></div>
+
+      <!-- Form -->
+      <form id="login-form" autocomplete="on">
+        <div style="margin-bottom:.875rem">
+          <label style="display:block;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n-700);margin-bottom:.35rem">Email or Phone</label>
+          <input id="login-identifier" type="text" class="login-field" placeholder="admin@example.com or 07xxxxxxxx" autocomplete="username" required>
+        </div>
+        <div style="margin-bottom:1.5rem">
+          <label style="display:block;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n-700);margin-bottom:.35rem">Password</label>
+          <input id="login-password" type="password" class="login-field" placeholder="Password" autocomplete="current-password" required>
+        </div>
+        <button id="login-btn" type="submit" class="login-submit">Sign In</button>
+      </form>
+
+      <!-- Google -->
+      <div id="google-signin-section">
+        <div class="login-divider"><span>or</span></div>
+        <div id="google-signin-btn" style="display:flex;justify-content:center"></div>
+      </div>
+
+      <!-- Back link -->
+      <p style="text-align:center;margin-top:1.5rem">
+        <a href="index.html" style="font-size:.8125rem;color:var(--n-400);text-decoration:none">← Back to Store</a>
+      </p>
+    </div>
+
+  </div>
+</div>
+
 <script src="js/config.js"></script>
 <script src="js/data.js"></script>
 <script src="js/api.js"></script>
@@ -383,18 +508,157 @@
 <script src="js/admin.js"></script>
 
 <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    API.init();
+/* ══════════════════════════════════════════
+   AdminGate — session check + login UI
+══════════════════════════════════════════ */
+const AdminGate = (() => {
+  const SESSION_KEY = 'ibh_session';
+
+  async function _checkSession() {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) return null;
+    try {
+      const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) { localStorage.removeItem(SESSION_KEY); return null; }
+      return await res.json();
+    } catch { return null; }
+  }
+
+  async function _login(identifier, password) {
+    const res  = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    if (!['admin', 'staff', 'branch_manager'].includes(data.role))
+      throw new Error('This account does not have admin access');
+    localStorage.setItem(SESSION_KEY, data.token);
+    return data;
+  }
+
+  async function _googleLogin(credential) {
+    const res  = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Google login failed');
+    if (!['admin', 'staff', 'branch_manager'].includes(data.role))
+      throw new Error('This Google account does not have admin access');
+    localStorage.setItem(SESSION_KEY, data.token);
+    return data;
+  }
+
+  function _showError(msg) {
+    const el = document.getElementById('login-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function _bootDashboard(user) {
+    window.AdminUser = user;
+
+    /* Update header */
+    document.getElementById('admin-user-name').textContent  = user.name;
+    document.getElementById('admin-user-role').textContent  = (user.role || '').replace('_', ' ');
+    document.getElementById('admin-user-badge').style.display = '';
+    document.getElementById('admin-logout-btn').style.display  = '';
+
+    /* Hide login gate */
+    document.getElementById('admin-login-screen').style.display = 'none';
+
+    /* Restrict sidebar for branch_manager */
+    if (user.role === 'branch_manager') {
+      document.querySelectorAll('.admin-tab').forEach(tab => {
+        if (tab.dataset.tab !== 'orders') tab.style.display = 'none';
+      });
+    }
 
     /* Boot the dashboard */
-    await Admin.switchTab('orders');
-
-    /* Tab click delegation */
+    API.init();
+    Admin.switchTab('orders');
     document.querySelector('.admin-tabs').addEventListener('click', e => {
       const tab = e.target.closest('.admin-tab');
       if (tab && tab.dataset.tab) Admin.switchTab(tab.dataset.tab);
     });
-  });
+  }
+
+  async function init() {
+    /* 1. Try existing session */
+    const user = await _checkSession();
+    if (user && ['admin', 'staff', 'branch_manager'].includes(user.role)) {
+      _bootDashboard(user);
+      return;
+    }
+
+    /* 2. Show login form */
+    document.getElementById('login-loading').style.display = 'none';
+    document.getElementById('login-content').style.display = 'block';
+
+    /* 3. Bind login form */
+    document.getElementById('login-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      btn.disabled    = true;
+      btn.textContent = 'Signing in…';
+      document.getElementById('login-error').style.display = 'none';
+      try {
+        const u = await _login(
+          document.getElementById('login-identifier').value.trim(),
+          document.getElementById('login-password').value,
+        );
+        _bootDashboard(u);
+      } catch (err) {
+        _showError(err.message);
+        btn.disabled    = false;
+        btn.textContent = 'Sign In';
+      }
+    });
+
+    /* 4. Google Sign-In (only if configured) */
+    if (Config.GOOGLE_CLIENT_ID) {
+      const gsiScript  = document.createElement('script');
+      gsiScript.src    = 'https://accounts.google.com/gsi/client';
+      gsiScript.async  = true;
+      gsiScript.defer  = true;
+      gsiScript.onload = () => {
+        google.accounts.id.initialize({
+          client_id: Config.GOOGLE_CLIENT_ID,
+          callback:  (r) => {
+            document.getElementById('login-error').style.display = 'none';
+            _googleLogin(r.credential).then(_bootDashboard).catch(err => _showError(err.message));
+          },
+        });
+        google.accounts.id.renderButton(
+          document.getElementById('google-signin-btn'),
+          { theme: 'outline', size: 'large', width: 300, text: 'signin_with' },
+        );
+      };
+      document.head.appendChild(gsiScript);
+    } else {
+      document.getElementById('google-signin-section').style.display = 'none';
+    }
+  }
+
+  function logout() {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (token) {
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      }).catch(() => {});
+    }
+    localStorage.removeItem(SESSION_KEY);
+    window.location.reload();
+  }
+
+  return { init, logout };
+})();
+
+document.addEventListener('DOMContentLoaded', () => AdminGate.init());
 </script>
 
 </body>

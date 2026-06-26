@@ -14,8 +14,13 @@ const API = (() => {
 
   /* ── fetch helpers ── */
   const api = async (path, opts = {}) => {
+    const token = localStorage.getItem('ibh_session');
     const res = await fetch(`${Config.BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...opts.headers },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...opts.headers,
+      },
       ...opts,
       body: opts.body && !(opts.body instanceof FormData) ? JSON.stringify(opts.body) : opts.body,
     });
@@ -420,9 +425,14 @@ const API = (() => {
         reader.readAsDataURL(file);
       });
     }
-    const form = new FormData();
+    const form  = new FormData();
     form.append('file', file);
-    const res = await fetch(`${Config.BASE_URL}/upload`, { method: 'POST', body: form });
+    const token = localStorage.getItem('ibh_session');
+    const res   = await fetch(`${Config.BASE_URL}/upload`, {
+      method: 'POST',
+      body: form,
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
     if (!res.ok) throw new Error('Upload failed');
     const data = await res.json();
     return data.url;

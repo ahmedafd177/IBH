@@ -34,6 +34,84 @@
   </div>
 </div>
 
+<!-- AUTH MODAL (Sign In / Register) -->
+<div class="modal-overlay" id="auth-overlay" style="z-index:450">
+  <div class="modal" id="auth-modal" role="dialog" aria-label="Sign in" aria-hidden="true" style="max-width:420px;width:100%;padding:2rem 1.75rem">
+    <button class="modal-close" id="auth-modal-close" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:2px solid var(--n-200);margin-bottom:1.5rem;margin-top:.25rem">
+      <button id="auth-tab-login" style="flex:1;padding:.625rem;font-size:.875rem;font-weight:700;color:var(--blue);border:none;background:none;border-bottom:2px solid var(--blue);margin-bottom:-2px;cursor:pointer;font-family:inherit">Sign In</button>
+      <button id="auth-tab-register" style="flex:1;padding:.625rem;font-size:.875rem;font-weight:600;color:var(--n-500);border:none;background:none;cursor:pointer;font-family:inherit">Register</button>
+    </div>
+
+    <!-- Error -->
+    <div id="auth-error" style="display:none;background:var(--err-bg);color:var(--err);padding:.625rem .875rem;border-radius:var(--r-md);font-size:.8125rem;font-weight:500;margin-bottom:1rem"></div>
+
+    <!-- SIGN IN form -->
+    <form id="auth-login-form">
+      <div style="margin-bottom:.875rem">
+        <label style="display:block;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n-700);margin-bottom:.3rem">Email or Phone</label>
+        <input id="auth-identifier" type="text" placeholder="Email or phone number"
+          style="width:100%;padding:.625rem .875rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.9rem;font-family:inherit;outline:none;color:var(--n-900);box-sizing:border-box;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--n-200)'" required>
+      </div>
+      <div style="margin-bottom:1.25rem">
+        <label style="display:block;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n-700);margin-bottom:.3rem">Password</label>
+        <input id="auth-password" type="password" placeholder="Password"
+          style="width:100%;padding:.625rem .875rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.9rem;font-family:inherit;outline:none;color:var(--n-900);box-sizing:border-box;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--n-200)'" required>
+      </div>
+      <button type="submit" id="auth-login-btn"
+        style="width:100%;padding:.75rem;background:var(--blue);color:#fff;border:none;border-radius:var(--r-md);font-size:.9375rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s"
+        onmouseover="this.style.background='var(--blue-d)'" onmouseout="this.style.background='var(--blue)'">Sign In</button>
+    </form>
+
+    <!-- REGISTER form (hidden) -->
+    <form id="auth-register-form" style="display:none">
+      <div style="margin-bottom:.75rem">
+        <label style="display:block;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n-700);margin-bottom:.3rem">Full Name</label>
+        <input id="reg-name" type="text" placeholder="Your full name"
+          style="width:100%;padding:.625rem .875rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.9rem;font-family:inherit;outline:none;color:var(--n-900);box-sizing:border-box;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--n-200)'" required>
+      </div>
+      <div style="margin-bottom:.75rem">
+        <label style="display:block;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n-700);margin-bottom:.3rem">Phone</label>
+        <input id="reg-phone" type="tel" placeholder="07xxxxxxxx"
+          style="width:100%;padding:.625rem .875rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.9rem;font-family:inherit;outline:none;color:var(--n-900);box-sizing:border-box;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--n-200)'" required>
+      </div>
+      <div style="margin-bottom:.75rem">
+        <label style="display:block;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n-700);margin-bottom:.3rem">Email (optional)</label>
+        <input id="reg-email" type="email" placeholder="your@email.com"
+          style="width:100%;padding:.625rem .875rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.9rem;font-family:inherit;outline:none;color:var(--n-900);box-sizing:border-box;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--n-200)'">
+      </div>
+      <div style="margin-bottom:1.25rem">
+        <label style="display:block;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--n-700);margin-bottom:.3rem">Password</label>
+        <input id="reg-password" type="password" placeholder="At least 6 characters"
+          style="width:100%;padding:.625rem .875rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.9rem;font-family:inherit;outline:none;color:var(--n-900);box-sizing:border-box;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--n-200)'" required>
+      </div>
+      <button type="submit" id="auth-register-btn"
+        style="width:100%;padding:.75rem;background:var(--blue);color:#fff;border:none;border-radius:var(--r-md);font-size:.9375rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s"
+        onmouseover="this.style.background='var(--blue-d)'" onmouseout="this.style.background='var(--blue)'">Create Account</button>
+    </form>
+
+    <!-- Google -->
+    <div id="auth-google-section">
+      <div style="display:flex;align-items:center;gap:.75rem;margin:1.25rem 0">
+        <div style="flex:1;height:1px;background:var(--n-200)"></div>
+        <span style="font-size:.75rem;color:var(--n-400);font-weight:500">or</span>
+        <div style="flex:1;height:1px;background:var(--n-200)"></div>
+      </div>
+      <div id="auth-google-btn" style="display:flex;justify-content:center"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ADMIN PANEL -->
 <div class="admin-overlay" id="admin-overlay"></div>
 <div class="admin-panel" id="admin-panel" role="dialog" aria-label="Admin dashboard" aria-hidden="true">
