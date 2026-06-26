@@ -15,6 +15,26 @@ function row2js(p) {
   };
 }
 
+/* GET /api/products/genders?cat=X — distinct genders that exist in DB */
+router.get('/genders', (req, res) => {
+  const { cat } = req.query;
+  let sql = "SELECT DISTINCT gender FROM products WHERE isVisible = 1 AND gender != 'All'";
+  const args = [];
+  if (cat) { sql += ' AND cat = ?'; args.push(cat); }
+  sql += ' ORDER BY gender ASC';
+  res.json(db.prepare(sql).all(...args).map(r => r.gender));
+});
+
+/* GET /api/products/subcats?cat=X — distinct subcategories that exist in DB */
+router.get('/subcats', (req, res) => {
+  const { cat } = req.query;
+  let sql = 'SELECT DISTINCT subcat FROM products WHERE isVisible = 1';
+  const args = [];
+  if (cat) { sql += ' AND cat = ?'; args.push(cat); }
+  sql += ' ORDER BY subcat ASC';
+  res.json(db.prepare(sql).all(...args).map(r => r.subcat));
+});
+
 /* GET /api/products */
 router.get('/', (req, res) => {
   const { cat, brand, gender, subcat, isNew, isTrend, isFeat, search, admin } = req.query;

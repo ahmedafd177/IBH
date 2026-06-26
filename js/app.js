@@ -60,6 +60,7 @@ const App = (() => {
     populateBrandsTicker();
     await populateNavBrands();
     await populateNavCategories();
+    await populateNavDropdowns();
   }
 
   async function renderTrending(cat) {
@@ -161,6 +162,81 @@ const App = (() => {
       mobCatList.innerHTML = cats.map(name =>
         `<a href="#" data-filter="subcat:${name}">${name}</a>`
       ).join('');
+    }
+  }
+
+  /* ── Populate per-category dropdowns (subcats, genders, brands) from DB ── */
+  async function populateNavDropdowns() {
+    const genderLabels = { Male: "Men's", Female: "Women's", Unisex: 'Unisex', Children: 'Children', All: 'All' };
+
+    const mainCats = [
+      { slug: 'perfume', subcatHeading: 'By Type',  showGender: true  },
+      { slug: 'hair',    subcatHeading: 'Products',  showGender: false },
+      { slug: 'body',    subcatHeading: 'Products',  showGender: false },
+    ];
+
+    /* Fetch all data in parallel */
+    const [allBrands, allProducts] = await Promise.all([
+      API.getBrandsAsync(),
+      API.getProducts(),
+    ]);
+
+    /* Build lookup: cat → Set of brands, cat → Set of subcats */
+    const catBrandSet  = {};
+    const catSubcatSet = {};
+    allProducts.forEach(p => {
+      if (!catBrandSet[p.cat])  catBrandSet[p.cat]  = new Set();
+      if (!catSubcatSet[p.cat]) catSubcatSet[p.cat] = new Set();
+      catBrandSet[p.cat].add(p.brand);
+      catSubcatSet[p.cat].add(p.subcat);
+    });
+
+    for (const { slug, subcatHeading, showGender } of mainCats) {
+      const inner = document.getElementById(`nav-dropdown-inner-${slug}`);
+      if (!inner) continue;
+
+      /* Subcats column */
+      const subcats = [...(catSubcatSet[slug] || [])].sort();
+      const subcatCol = subcats.length ? `
+        <div class="dropdown-col">
+          <p class="dropdown-heading">${subcatHeading}</p>
+          <ul>
+            ${subcats.map(s => `<li><a href="#" data-cat="${slug}" data-filter="subcat:${s}">${s}</a></li>`).join('')}
+          </ul>
+        </div>` : '';
+
+      /* Gender column — distinct genders that actually exist in DB for this category */
+      let genderCol = '';
+      if (showGender) {
+        const genders = [...new Set(
+          allProducts
+            .filter(p => p.cat === slug && p.gender && p.gender !== 'All')
+            .map(p => p.gender)
+        )].sort();
+        if (genders.length) {
+          genderCol = `
+            <div class="dropdown-col">
+              <p class="dropdown-heading">By Gender</p>
+              <ul>
+                ${genders.map(g =>
+                  `<li><a href="#" data-cat="${slug}" data-filter="gender:${g}">${genderLabels[g] || g}</a></li>`
+                ).join('')}
+              </ul>
+            </div>`;
+        }
+      }
+
+      /* Brands column — only brands that have products in this category */
+      const catBrands = allBrands.filter(b => catBrandSet[slug]?.has(b.name));
+      const brandsCol = catBrands.length ? `
+        <div class="dropdown-col">
+          <p class="dropdown-heading">By Brand</p>
+          <ul>
+            ${catBrands.map(b => `<li><a href="#" data-cat="${slug}" data-filter="brand:${b.name}">${b.name}</a></li>`).join('')}
+          </ul>
+        </div>` : '';
+
+      inner.innerHTML = subcatCol + genderCol + brandsCol;
     }
   }
 
@@ -533,6 +609,9 @@ const App = (() => {
 
     /* Populate Categories nav dropdown */
     await populateNavCategories();
+
+    /* Populate per-category dropdowns (subcats, genders, brands) */
+    await populateNavDropdowns();
 
     /* Apply hero background if set */
     applyHeroBg();

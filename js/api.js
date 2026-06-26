@@ -343,6 +343,68 @@ const API = (() => {
     return api('/users');
   }
 
+  /* ─────────────── DELIVERY AREAS ─────────────── */
+
+  async function getDeliveryAreas() {
+    if (ls()) return JSON.parse(localStorage.getItem('ibh_delivery_areas') || '[]');
+    return api('/delivery-areas');
+  }
+
+  async function addDeliveryArea({ name, price }) {
+    if (ls()) {
+      const areas = JSON.parse(localStorage.getItem('ibh_delivery_areas') || '[]');
+      if (areas.find(a => a.name === name)) throw new Error('Area already exists');
+      const area = { id: Date.now(), name, price: Number(price) };
+      areas.push(area);
+      localStorage.setItem('ibh_delivery_areas', JSON.stringify(areas));
+      return area;
+    }
+    return api('/delivery-areas', { method: 'POST', body: { name, price } });
+  }
+
+  async function updateDeliveryArea(id, data) {
+    if (ls()) {
+      const areas = JSON.parse(localStorage.getItem('ibh_delivery_areas') || '[]');
+      const idx = areas.findIndex(a => String(a.id) === String(id));
+      if (idx > -1) { areas[idx] = { ...areas[idx], ...data }; localStorage.setItem('ibh_delivery_areas', JSON.stringify(areas)); }
+      return areas[idx];
+    }
+    return api(`/delivery-areas/${id}`, { method: 'PUT', body: data });
+  }
+
+  async function deleteDeliveryArea(id) {
+    if (ls()) {
+      const areas = JSON.parse(localStorage.getItem('ibh_delivery_areas') || '[]');
+      localStorage.setItem('ibh_delivery_areas', JSON.stringify(areas.filter(a => String(a.id) !== String(id))));
+      return;
+    }
+    return api(`/delivery-areas/${id}`, { method: 'DELETE' });
+  }
+
+  /* ─────────────── PRODUCT GENDERS / SUBCATS ─────────────── */
+
+  async function getProductGenders(cat) {
+    if (ls()) {
+      const ps = lsGet(K.PRODUCTS) || [];
+      const filtered = cat ? ps.filter(p => p.cat === cat && p.isVisible !== false) : ps.filter(p => p.isVisible !== false);
+      const genders = [...new Set(filtered.map(p => p.gender).filter(g => g && g !== 'All'))].sort();
+      return genders;
+    }
+    const params = cat ? `?cat=${encodeURIComponent(cat)}` : '';
+    return api(`/products/genders${params}`);
+  }
+
+  async function getProductSubcats(cat) {
+    if (ls()) {
+      const ps = lsGet(K.PRODUCTS) || [];
+      const filtered = cat ? ps.filter(p => p.cat === cat && p.isVisible !== false) : ps.filter(p => p.isVisible !== false);
+      const subcats = [...new Set(filtered.map(p => p.subcat).filter(Boolean))].sort();
+      return subcats;
+    }
+    const params = cat ? `?cat=${encodeURIComponent(cat)}` : '';
+    return api(`/products/subcats${params}`);
+  }
+
   /* ─────────────── FILE UPLOAD ─────────────── */
   async function uploadImage(file) {
     if (ls()) {
@@ -377,5 +439,7 @@ const API = (() => {
     getOrders, createOrder, updateOrderStatus,
     getUsers, createUser, updateUserRole, deleteUser,
     uploadImage,
+    getDeliveryAreas, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea,
+    getProductGenders, getProductSubcats,
   };
 })();

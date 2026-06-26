@@ -34,13 +34,14 @@ const Admin = (() => {
       btn.classList.toggle('active', btn.dataset.tab === tab));
     const content = document.getElementById('admin-content');
     switch (tab) {
-      case 'orders':      content.innerHTML = await buildOrders();      break;
-      case 'products':    content.innerHTML = await buildProducts();    break;
-      case 'brands':      content.innerHTML = await buildBrands();      break;
-      case 'categories':  content.innerHTML = await buildCategories();  break;
+      case 'orders':      content.innerHTML = await buildOrders();         break;
+      case 'products':    content.innerHTML = await buildProducts();       break;
+      case 'brands':      content.innerHTML = await buildBrands();         break;
+      case 'categories':  content.innerHTML = await buildCategories();     break;
       case 'add-product': content.innerHTML = await buildAddProduct();  _editingId = null; break;
-      case 'users':       content.innerHTML = await buildUsers();       break;
-      case 'settings':    content.innerHTML = buildSettings();          break;
+      case 'users':       content.innerHTML = await buildUsers();          break;
+      case 'delivery':    content.innerHTML = await buildDeliveryAreas();  break;
+      case 'settings':    content.innerHTML = buildSettings();             break;
     }
     bindTabEvents(tab);
   }
@@ -533,6 +534,73 @@ const Admin = (() => {
   }
 
   /* ═══════════════════════════
+     DELIVERY AREAS
+  ═══════════════════════════ */
+  async function buildDeliveryAreas() {
+    const areas = await API.getDeliveryAreas();
+    const totalAreas = areas.length;
+    const freeCount  = areas.filter(a => Number(a.price) === 0).length;
+
+    return `
+      <div class="admin-stats">
+        <div class="admin-stat"><div class="admin-stat-icon">📍</div><div class="admin-stat-num">${totalAreas}</div><div class="admin-stat-label">Total Zones</div></div>
+        <div class="admin-stat"><div class="admin-stat-icon">🆓</div><div class="admin-stat-num">${freeCount}</div><div class="admin-stat-label">Free Delivery Zones</div></div>
+        <div class="admin-stat"><div class="admin-stat-icon">💸</div><div class="admin-stat-num">${totalAreas - freeCount}</div><div class="admin-stat-label">Paid Delivery Zones</div></div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-head">
+          <h4>Delivery Areas &amp; Prices</h4>
+          <span style="font-size:.75rem;color:var(--n-400)">Set delivery cost per area / zone</span>
+        </div>
+
+        <!-- Add form -->
+        <div class="form-row" style="margin-bottom:1.25rem;align-items:flex-end">
+          <div class="form-group" style="margin:0">
+            <label>Area / Zone Name</label>
+            <input id="da-name" type="text" placeholder="e.g. Westlands">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Delivery Price (KES) — enter 0 for free</label>
+            <input id="da-price" type="number" min="0" step="0.01" placeholder="e.g. 200">
+          </div>
+          <button class="admin-btn admin-btn-success" id="add-da-btn" style="height:fit-content;margin-top:auto">+ Add Area</button>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="da-table">
+            <thead><tr>
+              <th>#</th><th>Area / Zone</th><th>Delivery Price (KES)</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="da-tbody">
+              ${buildDeliveryAreaRows(areas)}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  function buildDeliveryAreaRows(areas) {
+    if (!areas.length) {
+      return `<tr><td colspan="4" style="text-align:center;padding:2.5rem;color:var(--n-400)">No delivery areas yet. Add one above.</td></tr>`;
+    }
+    return areas.map((a, i) => `
+      <tr data-area-id="${a.id}">
+        <td style="color:var(--n-400);font-size:.75rem;font-weight:600">${i + 1}</td>
+        <td><strong>${a.name}</strong></td>
+        <td>
+          ${Number(a.price) === 0
+            ? '<span class="pill pill-confirmed">Free</span>'
+            : `KES ${Number(a.price).toLocaleString()}`}
+        </td>
+        <td style="white-space:nowrap">
+          <button class="admin-btn admin-btn-primary btn-sm" data-edit-da="${a.id}" style="margin-right:.375rem">Edit</button>
+          <button class="admin-btn admin-btn-danger btn-sm"  data-del-da="${a.id}">Delete</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  /* ═══════════════════════════
      SETTINGS
   ═══════════════════════════ */
   function buildSettings() {
@@ -704,6 +772,33 @@ const Admin = (() => {
   }
 
   /* ═══════════════════════════
+     CONFIRM MODAL
+  ═══════════════════════════ */
+  function _showConfirm({ title = 'Confirm Delete', body, confirmLabel = 'Delete', onConfirm }) {
+    document.getElementById('admin-confirm-overlay')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'admin-confirm-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)';
+    overlay.innerHTML = `
+      <div style="background:var(--white);border-radius:var(--r-xl);max-width:400px;width:100%;padding:2rem 1.75rem;box-shadow:var(--sh-xl);text-align:center">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--err-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;flex-shrink:0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--err)" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </div>
+        <h3 style="font-size:1rem;font-weight:700;color:var(--n-900);margin-bottom:.5rem">${title}</h3>
+        <p style="font-size:.875rem;color:var(--n-500);margin-bottom:1.75rem;line-height:1.55">${body}</p>
+        <div style="display:flex;gap:.75rem;justify-content:center">
+          <button id="admin-confirm-cancel" class="admin-btn" style="padding:.625rem 1.5rem;background:var(--n-100);color:var(--n-700);font-weight:600">Cancel</button>
+          <button id="admin-confirm-ok"     class="admin-btn admin-btn-danger" style="padding:.625rem 1.5rem;font-weight:600">${confirmLabel}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const cleanup = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(); });
+    document.getElementById('admin-confirm-cancel').addEventListener('click', cleanup);
+    document.getElementById('admin-confirm-ok').addEventListener('click', () => { cleanup(); onConfirm(); });
+  }
+
+  /* ═══════════════════════════
      IMAGE UPLOAD HELPER
   ═══════════════════════════ */
   function setupImageInput(urlInputId, fileInputId, previewId) {
@@ -789,12 +884,20 @@ const Admin = (() => {
       });
 
       c.querySelectorAll('[data-del-product]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          if (!confirm('Delete this product?')) return;
-          await API.deleteProduct(Number(btn.dataset.delProduct));
-          App.toast('Product deleted');
-          switchTab('products');
-          App.refreshHome();
+        btn.addEventListener('click', () => {
+          const id   = Number(btn.dataset.delProduct);
+          const name = btn.closest('tr')?.querySelector('td:nth-child(3) strong')?.textContent || 'this product';
+          _showConfirm({
+            title: 'Delete Product?',
+            body: `Are you sure you want to delete <strong>"${name}"</strong>?<br>This action cannot be undone.`,
+            confirmLabel: 'Yes, Delete',
+            onConfirm: async () => {
+              await API.deleteProduct(id);
+              App.toast('Product deleted');
+              switchTab('products');
+              App.refreshHome();
+            },
+          });
         });
       });
 
@@ -870,11 +973,18 @@ const Admin = (() => {
       });
 
       c.querySelectorAll('[data-del-brand]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          if (!confirm(`Delete brand "${btn.dataset.delBrand}"?`)) return;
-          await API.deleteBrand(btn.dataset.delBrand);
-          App.toast('Brand deleted');
-          switchTab('brands');
+        btn.addEventListener('click', () => {
+          const name = btn.dataset.delBrand;
+          _showConfirm({
+            title: 'Delete Brand?',
+            body: `Are you sure you want to delete brand <strong>"${name}"</strong>?<br>This cannot be undone.`,
+            confirmLabel: 'Yes, Delete',
+            onConfirm: async () => {
+              await API.deleteBrand(name);
+              App.toast('Brand deleted');
+              switchTab('brands');
+            },
+          });
         });
       });
     }
@@ -927,19 +1037,25 @@ const Admin = (() => {
       });
 
       c.querySelectorAll('[data-del-cat]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const val = btn.dataset.delCat;
+        btn.addEventListener('click', () => {
+          const val  = btn.dataset.delCat;
           const card = btn.closest('[data-cat-name]');
           const name = card?.dataset.catName || val;
-          if (!confirm(`Delete category "${name}"?`)) return;
-          if (!isNaN(val) && val !== '') {
-            await API.deleteCategory(name);
-          } else {
-            await API.deleteCategory(val);
-          }
-          App.toast('Category deleted');
-          App.refreshHome && App.refreshHome();
-          switchTab('categories');
+          _showConfirm({
+            title: 'Delete Category?',
+            body: `Are you sure you want to delete category <strong>"${name}"</strong>?<br>This cannot be undone.`,
+            confirmLabel: 'Yes, Delete',
+            onConfirm: async () => {
+              if (!isNaN(val) && val !== '') {
+                await API.deleteCategory(name);
+              } else {
+                await API.deleteCategory(val);
+              }
+              App.toast('Category deleted');
+              App.refreshHome && App.refreshHome();
+              switchTab('categories');
+            },
+          });
         });
       });
 
@@ -1118,15 +1234,105 @@ const Admin = (() => {
 
       /* Delete user */
       c.querySelectorAll('[data-del-user]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', () => {
           const id   = btn.dataset.delUser;
           const name = btn.closest('tr')?.querySelector('td:nth-child(2)')?.textContent.trim() || id;
-          if (!confirm(`Delete user "${name}"?`)) return;
-          try {
-            await API.deleteUser(id);
-            App.toast('User deleted');
-            switchTab('users');
-          } catch { App.toast('Delete failed', 'error'); }
+          _showConfirm({
+            title: 'Delete User?',
+            body: `Are you sure you want to delete user <strong>"${name}"</strong>?<br>All their data will be removed permanently.`,
+            confirmLabel: 'Yes, Delete',
+            onConfirm: async () => {
+              try {
+                await API.deleteUser(id);
+                App.toast('User deleted');
+                switchTab('users');
+              } catch { App.toast('Delete failed', 'error'); }
+            },
+          });
+        });
+      });
+    }
+
+    /* ── Delivery Areas ── */
+    if (tab === 'delivery') {
+      const nameIn  = document.getElementById('da-name');
+      const priceIn = document.getElementById('da-price');
+
+      const doAdd = async () => {
+        const name  = nameIn?.value.trim();
+        const price = priceIn?.value;
+        if (!name)         { App.toast('Enter an area name', 'error'); return; }
+        if (price === '')  { App.toast('Enter a delivery price (0 for free)', 'error'); return; }
+        try {
+          await API.addDeliveryArea({ name, price: Number(price) });
+          App.toast(`Area "${name}" added`, 'success');
+          switchTab('delivery');
+        } catch (e) {
+          App.toast(e.message || 'Area already exists', 'error');
+        }
+      };
+
+      document.getElementById('add-da-btn')?.addEventListener('click', doAdd);
+      nameIn?.addEventListener('keydown',  e => { if (e.key === 'Enter') doAdd(); });
+      priceIn?.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
+
+      /* Edit row inline */
+      c.querySelectorAll('[data-edit-da]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id  = btn.dataset.editDa;
+          const row = btn.closest('tr');
+          if (!row) return;
+          const name  = row.querySelector('td:nth-child(2)')?.textContent.trim() || '';
+          const priceText = row.querySelector('td:nth-child(3)')?.textContent.trim() || '0';
+          const price = priceText === 'Free' ? 0 : Number(priceText.replace(/[^0-9.]/g, ''));
+          row.innerHTML = `
+            <td colspan="4">
+              <div style="display:flex;gap:.625rem;align-items:flex-end;flex-wrap:wrap;padding:.5rem 0">
+                <div class="form-group" style="margin:0;min-width:160px">
+                  <label>Area Name</label>
+                  <input class="da-edit-name" type="text" value="${name}"
+                    style="width:100%;padding:.4rem .625rem;border:1.5px solid var(--blue);border-radius:var(--r-md);font-size:.8125rem;outline:none">
+                </div>
+                <div class="form-group" style="margin:0;min-width:140px">
+                  <label>Price (KES)</label>
+                  <input class="da-edit-price" type="number" min="0" step="0.01" value="${price}"
+                    style="width:100%;padding:.4rem .625rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem;outline:none">
+                </div>
+                <div style="display:flex;gap:.375rem">
+                  <button class="admin-btn admin-btn-success btn-sm da-save-btn">✓ Save</button>
+                  <button class="admin-btn btn-sm da-cancel-btn">Cancel</button>
+                </div>
+              </div>
+            </td>`;
+          row.querySelector('.da-save-btn').addEventListener('click', async () => {
+            const newName  = row.querySelector('.da-edit-name').value.trim();
+            const newPrice = row.querySelector('.da-edit-price').value;
+            if (!newName) { App.toast('Enter an area name', 'error'); return; }
+            try {
+              await API.updateDeliveryArea(id, { name: newName, price: Number(newPrice) });
+              App.toast('Area updated', 'success');
+              switchTab('delivery');
+            } catch { App.toast('Update failed', 'error'); }
+          });
+          row.querySelector('.da-cancel-btn').addEventListener('click', () => switchTab('delivery'));
+        });
+      });
+
+      /* Delete */
+      c.querySelectorAll('[data-del-da]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id   = btn.dataset.delDa;
+          const name = btn.closest('tr')?.querySelector('td:nth-child(2)')?.textContent.trim() || id;
+          _showConfirm({
+            title: 'Delete Delivery Area?',
+            body: `Are you sure you want to remove <strong>"${name}"</strong>?<br>Customers will no longer see this delivery zone.`,
+            confirmLabel: 'Yes, Delete',
+            onConfirm: async () => {
+              await API.deleteDeliveryArea(id);
+              App.toast('Area deleted');
+              switchTab('delivery');
+            },
+          });
         });
       });
     }

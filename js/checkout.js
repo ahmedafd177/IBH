@@ -13,19 +13,35 @@ const Checkout = (() => {
   let _authMode  = 'guest';
   let _user      = null;
   let _zone      = null;
+  let _zones     = [];   // loaded from DB; falls back to Config.DELIVERY_ZONES
   let _address   = '';
   let _notes     = '';
   let _payMethod = 'mpesa';
   let _buyNow    = false;
 
+  /* ── load delivery zones from DB, fall back to Config if empty ── */
+  async function _loadZones() {
+    try {
+      const dbAreas = await API.getDeliveryAreas();
+      if (dbAreas && dbAreas.length) {
+        _zones = dbAreas.map(a => ({ label: a.name, fee: Number(a.price) }));
+      } else {
+        _zones = Config.DELIVERY_ZONES;
+      }
+    } catch {
+      _zones = Config.DELIVERY_ZONES;
+    }
+  }
+
   /* ── entry: from cart ── */
-  function open(items, { buyNow = false } = {}) {
+  async function open(items, { buyNow = false } = {}) {
     _items   = items;
     _buyNow  = buyNow;
     _user    = _savedUser();
-    _zone    = _zone || Config.DELIVERY_ZONES[0];
     _step    = _user ? 2 : 1;
     App.closeCart();
+    await _loadZones();
+    _zone = _zone && _zones.find(z => z.label === _zone.label) ? _zone : _zones[0];
     _render();
     document.getElementById('checkout-overlay').classList.add('open');
     document.getElementById('checkout-modal').setAttribute('aria-hidden', 'false');
@@ -180,8 +196,8 @@ const Checkout = (() => {
      STEP 2 — DELIVERY
      ═══════════════════════════════ */
   function _step2() {
-    const z     = _zone || Config.DELIVERY_ZONES[0];
-    const zones = Config.DELIVERY_ZONES;
+    const z     = _zone || _zones[0] || Config.DELIVERY_ZONES[0];
+    const zones = _zones.length ? _zones : Config.DELIVERY_ZONES;
     return `
       <div class="co-section">
         <h3 class="co-title">${_user ? `Hi ${_user.name.split(' ')[0]}! 👋` : 'Delivery Details'}</h3>
@@ -470,7 +486,7 @@ const Checkout = (() => {
             <span>KES ${(c.price*c.qty).toLocaleString()}</span>
           </div>`).join('')}
         <div class="co-bd-row co-bd-sep">
-          <span>Delivery · ${(_zone||Config.DELIVERY_ZONES[0]).label}</span>
+          <span>Delivery · ${(_zone || _zones[0] || Config.DELIVERY_ZONES[0]).label}</span>
           <span>${fee===0 ? '<b style="color:var(--ok)">FREE</b>' : 'KES '+fee.toLocaleString()}</span>
         </div>
         <div class="co-bd-row co-bd-total">
