@@ -56,6 +56,7 @@ app.use('/api/users',      require('./routes/users'));
 app.use('/api/upload',     require('./routes/upload'));
 app.use('/api/auth',           require('./routes/auth'));
 app.use('/api/delivery-areas', require('./routes/delivery-areas'));
+app.use('/api/reviews',        require('./routes/reviews'));
 
 /* ── Serve assembled index.html ── */
 app.get('/', (req, res) => res.type('html').send(buildIndex()));

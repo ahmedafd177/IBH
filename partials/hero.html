@@ -68,12 +68,23 @@
     </div>
   </section>
 
-  <!-- BRANDS TICKER -->
-  <section id="brands-section" class="brands-section section-sm" aria-label="Brand partners">
-    <div class="container"><p class="brands-label">Our Brands</p></div>
-    <div class="brands-ticker-wrap">
-      <div class="brands-ticker">
-        <!-- populated dynamically by app.js populateBrandsTicker() -->
+  <!-- BRANDS SHOWCASE -->
+  <section id="brands-section" class="brands-section" aria-label="Brand partners">
+    <div class="container">
+      <div class="brands-head">
+        <div>
+          <p class="brands-eyebrow">Curated Selection</p>
+          <h2 class="brands-title">Our Brands</h2>
+        </div>
+        <a href="#" class="brands-view-all" data-page="brands">View All Brands
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+      <div class="brands-grid" id="brands-showcase-grid">
+        <!-- populated dynamically by app.js populateBrandsShowcase() -->
+      </div>
+      <div class="brands-ticker-wrap">
+        <div class="brands-ticker"><!-- loop ticker --></div>
       </div>
     </div>
   </section>

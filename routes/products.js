@@ -12,6 +12,8 @@ function row2js(p) {
     isTrend:   Boolean(p.isTrend),
     isFeat:    Boolean(p.isFeat),
     isVisible: Boolean(p.isVisible),
+    isOnSale:  Boolean(p.isOnSale),
+    isHot:     Boolean(p.isHot),
   };
 }
 
@@ -71,9 +73,9 @@ router.post('/', (req, res) => {
   const d = req.body;
   const stmt = db.prepare(`
     INSERT INTO products
-      (name,brand,cat,subcat,gender,price,oldPrice,emoji,desc,sizes,rating,isNew,isTrend,isFeat,isVisible,stock,imageMain,imageAlt1,imageAlt2)
+      (name,brand,cat,subcat,gender,price,oldPrice,emoji,desc,sizes,rating,isNew,isTrend,isFeat,isVisible,stock,imageMain,imageAlt1,imageAlt2,isOnSale,isHot)
     VALUES
-      (@name,@brand,@cat,@subcat,@gender,@price,@oldPrice,@emoji,@desc,@sizes,@rating,@isNew,@isTrend,@isFeat,@isVisible,@stock,@imageMain,@imageAlt1,@imageAlt2)
+      (@name,@brand,@cat,@subcat,@gender,@price,@oldPrice,@emoji,@desc,@sizes,@rating,@isNew,@isTrend,@isFeat,@isVisible,@stock,@imageMain,@imageAlt1,@imageAlt2,@isOnSale,@isHot)
   `);
   const info = stmt.run({
     name:      d.name,
@@ -95,6 +97,8 @@ router.post('/', (req, res) => {
     imageMain: d.imageMain || null,
     imageAlt1: d.imageAlt1 || null,
     imageAlt2: d.imageAlt2 || null,
+    isOnSale:  d.isOnSale  ? 1 : 0,
+    isHot:     d.isHot     ? 1 : 0,
   });
   const np = db.prepare('SELECT * FROM products WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json(row2js(np));
@@ -113,7 +117,8 @@ router.put('/:id', (req, res) => {
       price=@price, oldPrice=@oldPrice, emoji=@emoji, desc=@desc, sizes=@sizes,
       rating=@rating, isNew=@isNew, isTrend=@isTrend, isFeat=@isFeat,
       isVisible=@isVisible, stock=@stock,
-      imageMain=@imageMain, imageAlt1=@imageAlt1, imageAlt2=@imageAlt2
+      imageMain=@imageMain, imageAlt1=@imageAlt1, imageAlt2=@imageAlt2,
+      isOnSale=@isOnSale, isHot=@isHot
     WHERE id=@id
   `).run({
     ...merged,
@@ -123,6 +128,8 @@ router.put('/:id', (req, res) => {
     isTrend:   merged.isTrend   ? 1 : 0,
     isFeat:    merged.isFeat    ? 1 : 0,
     isVisible: merged.isVisible !== false && merged.isVisible !== 0 ? 1 : 0,
+    isOnSale:  merged.isOnSale  ? 1 : 0,
+    isHot:     merged.isHot     ? 1 : 0,
   });
   res.json(row2js(db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id)));
 });

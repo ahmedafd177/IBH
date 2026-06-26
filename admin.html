@@ -355,8 +355,10 @@
 <!-- PAGE HEADER -->
 <header class="admin-page-header">
   <div class="admin-page-header-left">
-    <img src="assets/images/logo.jpeg" alt="IBH" />
-    <h1>Admin Dashboard</h1>
+    <a href="index.html" title="Back to Store" style="display:flex;align-items:center;gap:.875rem;text-decoration:none;color:inherit">
+      <img src="assets/images/logo.jpeg" alt="IBH" style="transition:opacity .2s" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'" />
+      <h1>Admin Dashboard</h1>
+    </a>
   </div>
   <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
     <div class="admin-user-badge" id="admin-user-badge" style="display:none">
@@ -644,6 +646,37 @@ const AdminGate = (() => {
   }
 
   function logout() {
+    const user  = window.AdminUser;
+    const existing = document.getElementById('admin-signout-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'admin-signout-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px;max-width:360px;width:100%;padding:2rem 1.75rem;box-shadow:0 24px 60px rgba(0,0,0,.22);text-align:center">
+        <div style="width:52px;height:52px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;margin:0 auto 1.125rem;font-size:1.5rem">👋</div>
+        <h3 style="font-size:1.0625rem;font-weight:700;color:#111827;margin:0 0 .5rem">Sign out of Admin?</h3>
+        <p style="font-size:.875rem;color:#6B7280;margin:0 0 1.625rem;line-height:1.55">
+          Signed in as <strong style="color:#111827">${user?.name || 'Admin'}</strong>.<br>
+          Your session and cached data will be cleared.
+        </p>
+        <div style="display:flex;gap:.625rem;justify-content:center">
+          <button id="ao-cancel" style="flex:1;padding:.6875rem;border:1.5px solid #E5E7EB;border-radius:10px;background:#fff;color:#374151;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit">Stay Signed In</button>
+          <button id="ao-confirm" style="flex:1;padding:.6875rem;border:none;border-radius:10px;background:#DC2626;color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit">Yes, Sign Out</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.getElementById('ao-cancel').addEventListener('click', () => overlay.remove());
+    document.getElementById('ao-confirm').addEventListener('click', () => {
+      overlay.remove();
+      _doLogout();
+    });
+  }
+
+  function _doLogout() {
     const token = localStorage.getItem(SESSION_KEY);
     if (token) {
       fetch('/api/auth/logout', {
@@ -651,7 +684,11 @@ const AdminGate = (() => {
         headers: { 'Authorization': `Bearer ${token}` },
       }).catch(() => {});
     }
+    /* clear all session + app cache */
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem('ibh_user');
+    localStorage.removeItem('ibh_account');
+    localStorage.removeItem('ibh_wish');
     window.location.reload();
   }
 

@@ -58,6 +58,7 @@ const App = (() => {
     await renderTrending('all');
     await renderMostSell('all');
     populateBrandsTicker();
+    populateBrandsShowcase();
     await populateNavBrands();
     await populateNavCategories();
     await populateNavDropdowns();
@@ -118,6 +119,25 @@ const App = (() => {
     if (!brands.length) return;
     const spans = brands.map(b => `<span>${b.name}</span>`).join('');
     ticker.innerHTML = spans + spans; // doubled for seamless infinite-scroll loop
+  }
+
+  /* ── Brands showcase grid on homepage ── */
+  async function populateBrandsShowcase() {
+    const grid = document.getElementById('brands-showcase-grid');
+    if (!grid) return;
+    const brands = await API.getBrandsAsync();
+    if (!brands.length) return;
+    grid.innerHTML = brands.map(b => {
+      const letter = (b.name || '?')[0].toUpperCase();
+      const avatar = b.image
+        ? `<img src="${b.image}" alt="${b.name}" loading="lazy">`
+        : `<span class="brand-card-letter">${letter}</span>`;
+      return `
+        <button class="brand-card" data-brand-nav="${b.name}" aria-label="Shop ${b.name}">
+          <div class="brand-card-avatar">${avatar}</div>
+          <span class="brand-card-name">${b.name}</span>
+        </button>`;
+    }).join('');
   }
 
   /* ── Populate Brands nav dropdown (async — loads from backend) ── */
@@ -408,9 +428,22 @@ const App = (() => {
   function handleClick(e) {
     const t = e.target;
 
-    /* Product card click */
+    /* Direct add-to-cart button on product card */
+    const directAddBtn = t.closest('[data-add-direct]');
+    if (directAddBtn) {
+      e.preventDefault(); e.stopPropagation();
+      const pid = Number(directAddBtn.dataset.addDirect);
+      Cart.add(pid, 1);
+      const orig = directAddBtn.innerHTML;
+      directAddBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Added!';
+      directAddBtn.style.cssText += ';background:var(--ok);color:#fff';
+      setTimeout(() => { directAddBtn.innerHTML = orig; directAddBtn.style.background = ''; directAddBtn.style.color = ''; }, 1400);
+      return;
+    }
+
+    /* Product card click — open modal only from image or body, not buttons */
     const card = t.closest('.pcard');
-    if (card && !t.closest('.pcard-wish') && !t.closest('.pcard-add')) {
+    if (card && !t.closest('.pcard-wish') && !t.closest('[data-add-direct]')) {
       Products.openModal(Number(card.dataset.productId));
       return;
     }
@@ -429,7 +462,14 @@ const App = (() => {
       return;
     }
 
-    /* Brand item click (nav dropdown) */
+    /* "View All Brands" link on homepage */
+    if (t.closest('[data-page="brands"]')) {
+      e.preventDefault();
+      showShop({}, 'All Products', 'Our Brands');
+      return;
+    }
+
+    /* Brand item click (nav dropdown or brands showcase) */
     const brandNavItem = t.closest('[data-brand-nav]');
     if (brandNavItem) {
       e.preventDefault();
@@ -455,57 +495,11 @@ const App = (() => {
       return;
     }
 
-    /* Quantity selector toggle */
-    const addQtyBtn = t.closest('[data-product-id].pcard-add-qty');
-    if (addQtyBtn) {
-      e.preventDefault(); e.stopPropagation();
-      const productId = addQtyBtn.dataset.productId;
-      const card = addQtyBtn.closest('.pcard');
-      const selector = card?.querySelector('.pcard-qty-selector');
-      const addBtn = card?.querySelector('.pcard-add-qty');
-      if (selector && addBtn) {
-        addBtn.style.display = 'none';
-        selector.style.display = 'flex';
-      }
-      return;
-    }
-
-    /* Quantity +/- buttons */
-    const qtyBtn = t.closest('.pcard-qty-btn');
-    if (qtyBtn) {
-      e.preventDefault(); e.stopPropagation();
-      const input = qtyBtn.closest('.pcard-qty-selector')?.querySelector('.pcard-qty-input');
-      if (input) {
-        const action = qtyBtn.dataset.qtyAction;
-        let val = parseInt(input.value) || 1;
-        const max = parseInt(input.max) || 10;
-        if (action === 'plus') val = Math.min(val + 1, max);
-        if (action === 'minus') val = Math.max(val - 1, 1);
-        input.value = val;
-      }
-      return;
-    }
-
-    /* Add to cart (product cards + product modal) */
+    /* Add to cart from product modal */
     const addBtn = t.closest('[data-add-id]');
     if (addBtn) {
       e.preventDefault(); e.stopPropagation();
-      let qty = 1;
-      const input = addBtn.closest('.pcard-qty-selector')?.querySelector('.pcard-qty-input');
-      if (input) qty = parseInt(input.value) || 1;
-
-      const productId = Number(addBtn.dataset.addId);
-      Cart.add(productId, qty);
-
-      // Reset quantity selector if in card view
-      const selector = addBtn.closest('.pcard-qty-selector');
-      const addQtyBtn = addBtn.closest('.pcard')?.querySelector('.pcard-add-qty');
-      if (selector && addQtyBtn) {
-        selector.style.display = 'none';
-        addQtyBtn.style.display = 'flex';
-        if (input) input.value = '1';
-      }
-
+      Cart.add(Number(addBtn.dataset.addId), 1);
       if (addBtn.hasAttribute('data-close-modal')) closeProductModal();
       return;
     }
@@ -686,34 +680,30 @@ const App = (() => {
       btn.addEventListener('click', () => btn.closest('.mobile-nav-group').classList.toggle('open'));
     });
 
-    /* Search */
-    const searchToggle = document.getElementById('search-toggle');
-    const searchExpand = document.getElementById('search-expand');
+    /* Search (inline bar — always visible on desktop) */
     const searchInput  = document.getElementById('search-input');
     const searchClear  = document.getElementById('search-clear');
-    searchToggle.addEventListener('click', () => {
-      const isOpen = searchExpand.classList.toggle('open');
-      searchToggle.setAttribute('aria-expanded', String(isOpen));
-      if (isOpen) searchInput.focus();
+    searchInput.addEventListener('input', () => {
+      handleSearch(searchInput.value);
+      if (searchClear) searchClear.hidden = !searchInput.value;
     });
-    searchInput.addEventListener('input', () => handleSearch(searchInput.value));
     searchInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         showShop({ search: searchInput.value }, `"${searchInput.value}"`, 'Search');
         document.getElementById('search-results').hidden = true;
-        searchExpand.classList.remove('open');
       }
       if (e.key === 'Escape') {
-        searchExpand.classList.remove('open');
         document.getElementById('search-results').hidden = true;
       }
     });
-    searchClear.addEventListener('click', () => {
-      searchInput.value = '';
-      document.getElementById('search-results').hidden = true;
-      searchExpand.classList.remove('open');
-      searchToggle.setAttribute('aria-expanded', 'false');
-    });
+    if (searchClear) {
+      searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClear.hidden = true;
+        document.getElementById('search-results').hidden = true;
+        searchInput.focus();
+      });
+    }
 
     /* Brands ticker — click any brand name to view its products */
     const brandsTicker = document.querySelector('.brands-ticker-wrap');
@@ -776,6 +766,79 @@ const App = (() => {
       });
     }
 
+    /* ── Track Order ── */
+    const trackBtn    = document.getElementById('track-order-btn');
+    const trackOverlay = document.getElementById('track-order-overlay');
+    const trackClose  = document.getElementById('track-order-close');
+    const trackSearch = document.getElementById('track-order-btn-search');
+    const trackInput  = document.getElementById('track-order-input');
+
+    function _openTrackModal() {
+      trackOverlay?.classList.add('open');
+      document.getElementById('track-order-modal')?.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => trackInput?.focus(), 80);
+    }
+    function _closeTrackModal() {
+      trackOverlay?.classList.remove('open');
+      document.getElementById('track-order-modal')?.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    trackBtn?.addEventListener('click', _openTrackModal);
+    trackClose?.addEventListener('click', _closeTrackModal);
+    trackOverlay?.addEventListener('click', e => { if (e.target === trackOverlay) _closeTrackModal(); });
+
+    async function _doTrackOrder() {
+      const id  = trackInput?.value.trim().toUpperCase();
+      const out = document.getElementById('track-order-result');
+      if (!id) { out.innerHTML = `<p style="color:var(--err);font-size:.875rem;text-align:center">Please enter an order ID</p>`; return; }
+      out.innerHTML = `<p style="text-align:center;color:var(--n-400);font-size:.875rem">Searching…</p>`;
+      try {
+        const orders = await fetch(`${Config.BASE_URL}/orders?search=${encodeURIComponent(id)}`).then(r => r.json());
+        const order  = orders.find(o => o.id.toUpperCase() === id) || orders[0];
+        if (!order) {
+          out.innerHTML = `<div style="text-align:center;padding:1rem 0">
+            <div style="font-size:2rem;margin-bottom:.5rem">🔍</div>
+            <p style="font-weight:600;color:var(--n-800);margin-bottom:.25rem">Order not found</p>
+            <p style="font-size:.8125rem;color:var(--n-500)">Check the order ID and try again. It should look like <strong>IBH-1234567890</strong></p>
+          </div>`;
+          return;
+        }
+        const statusColors = { confirmed:'var(--ok-bg)', pending:'var(--warn-bg)', processing:'var(--info-bg)', delivered:'#BBF7D0', cancelled:'var(--err-bg)' };
+        const statusText   = { confirmed:'#065F46', pending:'#92400E', processing:'#1E40AF', delivered:'#14532D', cancelled:'#991B1B' };
+        const statusIcons  = { confirmed:'✅', pending:'⏳', processing:'📦', delivered:'🎉', cancelled:'❌' };
+        const s = order.status || 'confirmed';
+        out.innerHTML = `
+          <div style="border:1.5px solid var(--n-200);border-radius:var(--r-lg);overflow:hidden">
+            <div style="padding:1rem 1.25rem;background:${statusColors[s]||'var(--n-100)'};display:flex;align-items:center;gap:.75rem">
+              <span style="font-size:1.5rem">${statusIcons[s]||'📦'}</span>
+              <div>
+                <p style="font-weight:700;color:${statusText[s]||'var(--n-800)'};font-size:.9375rem;margin:0">${s.charAt(0).toUpperCase()+s.slice(1)}</p>
+                <p style="font-size:.75rem;color:${statusText[s]||'var(--n-600)'};margin:0;opacity:.8">${order.date} ${order.time||''}</p>
+              </div>
+              <span style="margin-left:auto;background:#fff;border-radius:var(--r-pill);padding:.2rem .75rem;font-size:.6875rem;font-weight:700;color:var(--blue-d)">${order.id}</span>
+            </div>
+            <div style="padding:1rem 1.25rem">
+              <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--n-500);margin:0 0 .5rem">Items (${(order.items||[]).length})</p>
+              ${(order.items||[]).map(i=>`
+                <div style="display:flex;justify-content:space-between;font-size:.8125rem;padding:.3rem 0;border-bottom:1px solid var(--n-100)">
+                  <span>${i.emoji||''} ${i.name} ×${i.qty}</span>
+                  <span style="font-weight:600">KES ${((i.price||0)*(i.qty||1)).toLocaleString()}</span>
+                </div>`).join('')}
+              <div style="display:flex;justify-content:space-between;font-size:.875rem;font-weight:700;color:var(--blue-d);padding:.625rem 0 0">
+                <span>Total</span><span>KES ${(order.total||0).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>`;
+      } catch {
+        out.innerHTML = `<p style="color:var(--err);font-size:.875rem;text-align:center">Could not look up order. Please try again.</p>`;
+      }
+    }
+
+    trackSearch?.addEventListener('click', _doTrackOrder);
+    trackInput?.addEventListener('keydown', e => { if (e.key === 'Enter') _doTrackOrder(); });
+
     /* Delegated clicks */
     document.addEventListener('click', handleClick);
 
@@ -787,9 +850,9 @@ const App = (() => {
       }
       if (e.key === 'Escape') {
         closeCart(); closeProductModal(); closeCheckoutModal();
+        _closeTrackModal();
         toggleMobileMenu(false);
         document.getElementById('search-results').hidden = true;
-        searchExpand.classList.remove('open');
       }
     });
   }

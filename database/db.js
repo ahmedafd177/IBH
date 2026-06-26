@@ -121,9 +121,23 @@ function seedMainCategories() {
 }
 
 /* ── Migrations ── */
-try { db.exec("ALTER TABLE accounts ADD COLUMN role   TEXT NOT NULL DEFAULT 'customer'"); } catch {}
-try { db.exec("ALTER TABLE accounts ADD COLUMN branch TEXT"); }                            catch {}
-try { db.exec("ALTER TABLE orders   ADD COLUMN branch TEXT"); }                            catch {}
+try { db.exec("ALTER TABLE accounts ADD COLUMN role     TEXT    NOT NULL DEFAULT 'customer'"); } catch {}
+try { db.exec("ALTER TABLE accounts ADD COLUMN branch   TEXT"); }                               catch {}
+try { db.exec("ALTER TABLE orders   ADD COLUMN branch   TEXT"); }                               catch {}
+try { db.exec("ALTER TABLE products ADD COLUMN isOnSale INTEGER NOT NULL DEFAULT 0"); }         catch {}
+try { db.exec("ALTER TABLE products ADD COLUMN isHot    INTEGER NOT NULL DEFAULT 0"); }         catch {}
+
+/* ── Reviews table ── */
+db.exec(`
+  CREATE TABLE IF NOT EXISTS reviews (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    name       TEXT    NOT NULL,
+    rating     INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+    comment    TEXT    NOT NULL DEFAULT '',
+    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+`);
 
 /* ── Sessions table ── */
 db.exec(`

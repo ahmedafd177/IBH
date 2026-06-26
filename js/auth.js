@@ -28,12 +28,13 @@ const Auth = (() => {
     const label = document.getElementById('auth-btn-label');
     if (!btn || !label) return;
     if (_user) {
-      label.textContent    = _user.name.split(' ')[0];
-      label.style.display  = '';
-      btn.title            = `Signed in as ${_user.name}`;
+      label.textContent = _user.name.split(' ')[0];
+      label.classList.add('visible');
+      btn.title = `Signed in as ${_user.name}`;
     } else {
-      label.style.display  = 'none';
-      btn.title            = 'Sign In / My Account';
+      label.textContent = '';
+      label.classList.remove('visible');
+      btn.title = 'Sign In / My Account';
     }
   }
 
@@ -83,12 +84,47 @@ const Auth = (() => {
         headers: { 'Authorization': `Bearer ${token}` },
       }).catch(() => {});
     }
+    /* clear all user-specific cache */
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(USER_KEY);
-    localStorage.removeItem('ibh_account'); /* clear checkout user too */
+    localStorage.removeItem('ibh_account');
+    localStorage.removeItem('ibh_wish');
     _user = null;
     _updateHeader();
-    if (typeof App !== 'undefined') App.toast('Signed out', '');
+    if (typeof App !== 'undefined') App.toast('You have been signed out successfully', '');
+  }
+
+  /* ── sign-out confirmation dialog ── */
+  function _confirmSignOut() {
+    const existing = document.getElementById('signout-confirm-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'signout-confirm-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px;max-width:360px;width:100%;padding:2rem 1.75rem;box-shadow:0 24px 60px rgba(0,0,0,.2);text-align:center">
+        <div style="width:52px;height:52px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;margin:0 auto 1.125rem;font-size:1.5rem">👋</div>
+        <h3 style="font-size:1.0625rem;font-weight:700;color:#111827;margin:0 0 .5rem">Sign out of your account?</h3>
+        <p style="font-size:.875rem;color:#6B7280;margin:0 0 1.625rem;line-height:1.55">
+          Signed in as <strong style="color:#111827">${_user?.name || 'you'}</strong>.<br>
+          Your cart and wishlist will be cleared.
+        </p>
+        <div style="display:flex;gap:.625rem;justify-content:center">
+          <button id="signout-cancel-btn" style="flex:1;padding:.6875rem;border:1.5px solid #E5E7EB;border-radius:10px;background:#fff;color:#374151;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit">Stay Signed In</button>
+          <button id="signout-confirm-btn" style="flex:1;padding:.6875rem;border:none;border-radius:10px;background:#1D4ED8;color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit">Yes, Sign Out</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    const cleanup = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(); });
+    document.getElementById('signout-cancel-btn').addEventListener('click', cleanup);
+    document.getElementById('signout-confirm-btn').addEventListener('click', () => {
+      cleanup();
+      signOut();
+    });
   }
 
   /* ── init: restore session + wire up events ── */
@@ -120,8 +156,7 @@ const Auth = (() => {
     /* Bind header auth button */
     document.getElementById('auth-btn')?.addEventListener('click', () => {
       if (_user) {
-        /* Already signed in → show sign-out option */
-        if (confirm(`Signed in as ${_user.name}\n\nSign out?`)) signOut();
+        _confirmSignOut();
       } else {
         openModal('login');
       }

@@ -438,6 +438,16 @@ const API = (() => {
     return data.url;
   }
 
+  /* ─────────────── REVIEWS ─────────────── */
+  async function getReviews(productId) {
+    if (ls()) return { reviews: [], avg: null, count: 0 };
+    return api(`/reviews/${productId}`);
+  }
+  async function addReview({ product_id, name, rating, comment }) {
+    if (ls()) return;
+    return api('/reviews', { method: 'POST', body: { product_id, name, rating, comment } });
+  }
+
   return {
     init,
     getProducts, getProduct, addProduct, updateProduct, deleteProduct,
@@ -451,5 +461,6 @@ const API = (() => {
     uploadImage,
     getDeliveryAreas, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea,
     getProductGenders, getProductSubcats,
+    getReviews, addReview,
   };
 })();

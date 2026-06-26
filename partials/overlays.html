@@ -112,6 +112,30 @@
   </div>
 </div>
 
+<!-- TRACK ORDER MODAL -->
+<div class="modal-overlay" id="track-order-overlay" style="z-index:500">
+  <div class="modal" id="track-order-modal" role="dialog" aria-label="Track your order" aria-hidden="true"
+    style="max-width:480px;width:100%;padding:2rem 1.75rem">
+    <button class="modal-close" id="track-order-close" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--blue-xl);display:flex;align-items:center;justify-content:center;margin:0 auto .875rem">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+      <h2 style="font-family:var(--f-display);font-size:1.25rem;font-weight:700;color:var(--blue-d);margin:0 0 .25rem">Track Your Order</h2>
+      <p style="font-size:.875rem;color:var(--n-500);margin:0">Enter your order ID to see its current status</p>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-bottom:1.25rem">
+      <input id="track-order-input" type="text" placeholder="e.g. IBH-1749123456789"
+        style="flex:1;padding:.6875rem .875rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.9rem;font-family:inherit;outline:none;color:var(--n-900);transition:border-color .2s"
+        onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--n-200)'">
+      <button id="track-order-btn-search" class="btn btn-primary" style="padding:.6875rem 1.25rem;white-space:nowrap">Search</button>
+    </div>
+    <div id="track-order-result"></div>
+  </div>
+</div>
+
 <!-- ADMIN PANEL -->
 <div class="admin-overlay" id="admin-overlay"></div>
 <div class="admin-panel" id="admin-panel" role="dialog" aria-label="Admin dashboard" aria-hidden="true">

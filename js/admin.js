@@ -391,9 +391,9 @@ const Admin = (() => {
         <!-- Images -->
         <p class="admin-section-label">Product Images</p>
         <div class="form-group">
-          <label>Main Image <span style="font-weight:400;color:var(--n-400)">(primary)</span></label>
+          <label>Main Image <span style="color:var(--err)">*</span> <span style="font-weight:400;color:var(--n-400)">(primary)</span></label>
           <div class="img-upload-group">
-            <input id="ap-img-main" type="url" placeholder="Paste image URL…" value="${v('imageMain')}">
+            <input id="ap-img-main" type="url" placeholder="Paste image URL…" value="${v('imageMain')}" required>
             <label class="img-upload-file-btn">📎 Upload<input type="file" id="ap-img-main-file" accept="image/*" hidden></label>
           </div>
           <div class="img-preview-wrap" id="ap-img-main-preview"></div>
@@ -463,9 +463,11 @@ const Admin = (() => {
         <!-- Flags -->
         <div class="form-group">
           <div style="display:flex;gap:1.25rem;flex-wrap:wrap;align-items:center">
-            <label class="flag-label"><input type="checkbox" id="ap-new"     ${checked('isNew')}>   New Arrival</label>
+            <label class="flag-label"><input type="checkbox" id="ap-new"     ${checked('isNew')}>    New Arrival</label>
             <label class="flag-label"><input type="checkbox" id="ap-trend"   ${checked('isTrend')}> Trending</label>
             <label class="flag-label"><input type="checkbox" id="ap-feat"    ${checked('isFeat')}>  Best Seller</label>
+            <label class="flag-label"><input type="checkbox" id="ap-on-sale" ${checked('isOnSale')}> On Sale</label>
+            <label class="flag-label"><input type="checkbox" id="ap-hot"     ${checked('isHot')}>   Hot</label>
             <label class="flag-label visibility-flag">
               <input type="checkbox" id="ap-visible" ${prefill ? (prefill.isVisible !== false ? 'checked' : '') : 'checked'}>
               <span>Visible on Store</span>
@@ -473,9 +475,12 @@ const Admin = (() => {
           </div>
         </div>
 
-        <button class="admin-btn admin-btn-success" id="save-product-btn" style="padding:.625rem 1.5rem;font-size:.875rem">
-          ${prefill ? '✓ Update Product' : '✓ Save Product'}
-        </button>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+          <button class="admin-btn admin-btn-success" id="save-product-btn" style="padding:.625rem 1.5rem;font-size:.875rem">
+            ${prefill ? '✓ Update Product' : '✓ Save Product'}
+          </button>
+          ${prefill ? `<button class="admin-btn" id="cancel-edit-product-btn" style="padding:.625rem 1.25rem;font-size:.875rem;background:var(--n-100);color:var(--n-700)">✕ Cancel</button>` : ''}
+        </div>
       </div>`;
   }
 
@@ -517,11 +522,18 @@ const Admin = (() => {
         </div>
         <div id="nu-branch-wrap" style="display:none;margin-top:.625rem">
           <div class="form-group" style="margin:0">
-            <label>Branch</label>
-            <select id="nu-branch">
-              <option value="">Select branch…</option>
-              ${(window.Config?.BRANCHES || []).map(b => `<option value="${b.name}">${b.name}</option>`).join('')}
-            </select>
+            <label>Assign Branch <span style="color:var(--err)">*</span></label>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.5rem;margin-top:.375rem" id="nu-branch-cards">
+              ${(window.Config?.BRANCHES || []).map(b => `
+                <label style="display:flex;flex-direction:column;gap:.25rem;padding:.625rem .875rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);cursor:pointer;transition:border-color .15s,background .15s" class="branch-card-label">
+                  <span style="display:flex;align-items:center;gap:.375rem">
+                    <input type="radio" name="nu-branch-radio" value="${b.name}" class="nu-branch-radio" style="accent-color:var(--blue)">
+                    <strong style="font-size:.8125rem;color:var(--n-900)">${b.name}</strong>
+                  </span>
+                  ${b.phone ? `<span style="font-size:.6875rem;color:var(--n-500);padding-left:1.25rem">${b.phone}</span>` : ''}
+                </label>`).join('')}
+            </div>
+            <input type="hidden" id="nu-branch" value="">
           </div>
         </div>
         <button class="admin-btn admin-btn-success" id="create-user-btn" style="margin-top:.75rem">+ Create User</button>
@@ -1141,9 +1153,16 @@ const Admin = (() => {
       setupImageInput('ap-img-alt1', 'ap-img-alt1-file', 'ap-img-alt1-preview');
       setupImageInput('ap-img-alt2', 'ap-img-alt2-file', 'ap-img-alt2-preview');
 
+      document.getElementById('cancel-edit-product-btn')?.addEventListener('click', () => {
+        _editingId = null;
+        switchTab('products');
+      });
+
       document.getElementById('save-product-btn')?.addEventListener('click', async () => {
         const name = document.getElementById('ap-name').value.trim();
         if (!name) { App.toast('Enter a product name', 'error'); return; }
+        const imageMain = document.getElementById('ap-img-main').value.trim();
+        if (!imageMain) { App.toast('Main image is required', 'error'); document.getElementById('ap-img-main').focus(); return; }
         const price = Number(document.getElementById('ap-price').value) || 0;
         const op    = document.getElementById('ap-old-price').value;
         const data  = {
@@ -1153,7 +1172,7 @@ const Admin = (() => {
           subcat:     document.getElementById('ap-subcat').value,
           gender:     document.getElementById('ap-gender').value,
           emoji:      document.getElementById('ap-emoji').value || '🛍️',
-          imageMain:  document.getElementById('ap-img-main').value.trim() || null,
+          imageMain,
           imageAlt1:  document.getElementById('ap-img-alt1').value.trim() || null,
           imageAlt2:  document.getElementById('ap-img-alt2').value.trim() || null,
           price,
@@ -1164,6 +1183,8 @@ const Admin = (() => {
           isNew:      document.getElementById('ap-new').checked,
           isTrend:    document.getElementById('ap-trend').checked,
           isFeat:     document.getElementById('ap-feat').checked,
+          isOnSale:   document.getElementById('ap-on-sale').checked,
+          isHot:      document.getElementById('ap-hot').checked,
           isVisible:  document.getElementById('ap-visible').checked,
         };
 
@@ -1195,6 +1216,18 @@ const Admin = (() => {
         });
       });
 
+      /* Branch card radio → update hidden input + highlight selected */
+      document.querySelectorAll('.nu-branch-radio').forEach(radio => {
+        radio.addEventListener('change', () => {
+          document.getElementById('nu-branch').value = radio.value;
+          document.querySelectorAll('.branch-card-label').forEach(lbl => {
+            const isSelected = lbl.querySelector('.nu-branch-radio') === radio;
+            lbl.style.borderColor = isSelected ? 'var(--blue)' : 'var(--n-200)';
+            lbl.style.background  = isSelected ? 'var(--blue-xl)' : '';
+          });
+        });
+      });
+
       /* Create user */
       document.getElementById('create-user-btn')?.addEventListener('click', async () => {
         const name   = document.getElementById('nu-name').value.trim();
@@ -1203,7 +1236,7 @@ const Admin = (() => {
         const role   = document.getElementById('nu-role').value;
         const branch = document.getElementById('nu-branch')?.value || '';
         if (!name || !phone) { App.toast('Name and phone required', 'error'); return; }
-        if (role === 'branch_manager' && !branch) { App.toast('Select a branch for Branch Manager', 'error'); return; }
+        if (role === 'branch_manager' && !branch) { App.toast('Select a branch for this Branch Manager', 'error'); return; }
         try {
           await API.createUser({ name, phone, email, role, branch });
           App.toast(`User "${name}" created`, 'success');

@@ -429,10 +429,31 @@ const Checkout = (() => {
             Continue Shopping →
           </button>
         </div>
+
+        ${_items.length ? `
+        <div style="margin-top:1.25rem;padding:1rem;background:var(--blue-xl);border-radius:var(--r-lg);border:1.5px solid var(--blue-l)">
+          <p style="font-size:.8125rem;font-weight:700;color:var(--blue-d);margin:0 0 .5rem">⭐ Enjoyed your purchase?</p>
+          <p style="font-size:.75rem;color:var(--blue);margin:0 0 .75rem">Click a product below to leave a review and help other shoppers!</p>
+          <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+            ${_items.map(i => `
+              <button class="co-review-product-btn btn btn-ghost"
+                data-review-pid="${i.id}"
+                style="font-size:.75rem;padding:.3rem .75rem;border-color:var(--blue-l);color:var(--blue-d)">
+                ${i.emoji || ''} ${i.name}
+              </button>`).join('')}
+          </div>
+        </div>` : ''}
       </div>`;
 
     const printBtn = document.getElementById('co-print-receipt');
     if (printBtn) printBtn.addEventListener('click', () => _printReceipt(order, total));
+
+    document.querySelectorAll('.co-review-product-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        App.closeCheckoutModal();
+        Products.openModal(Number(btn.dataset.reviewPid));
+      });
+    });
   }
 
   function _printReceipt(order, total) {
