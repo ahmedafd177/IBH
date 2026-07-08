@@ -46,3 +46,4 @@ The site can be deployed to any static hosting service like:
 - User authentication
 - Payment integration
 - Inventory management
+
