@@ -8,16 +8,18 @@
 const Checkout = (() => {
 
   /* ── state ── */
-  let _items     = [];
-  let _step      = 1;
-  let _authMode  = 'guest';
-  let _user      = null;
-  let _zone      = null;
-  let _zones     = [];   // loaded from DB; falls back to Config.DELIVERY_ZONES
-  let _address   = '';
-  let _notes     = '';
-  let _payMethod = 'mpesa';
-  let _buyNow    = false;
+  let _items          = [];
+  let _step           = 1;
+  let _authMode       = 'guest';
+  let _user           = null;
+  let _zone           = null;
+  let _zones          = [];   // loaded from DB; falls back to Config.DELIVERY_ZONES
+  let _address        = '';
+  let _notes          = '';
+  let _payMethod      = 'mpesa';
+  let _buyNow         = false;
+  let _couponCode     = '';
+  let _couponDiscount = 0;
 
   /* ── load delivery zones from DB, fall back to Config if empty ── */
   async function _loadZones() {
@@ -35,10 +37,12 @@ const Checkout = (() => {
 
   /* ── entry: from cart ── */
   async function open(items, { buyNow = false } = {}) {
-    _items   = items;
-    _buyNow  = buyNow;
-    _user    = _savedUser();
-    _step    = _user ? 2 : 1;
+    _items          = items;
+    _buyNow         = buyNow;
+    _user           = _savedUser();
+    _step           = _user ? 2 : 1;
+    _couponCode     = '';
+    _couponDiscount = 0;
     App.closeCart();
     await _loadZones();
     _zone = _zone && _zones.find(z => z.label === _zone.label) ? _zone : _zones[0];
@@ -71,13 +75,23 @@ const Checkout = (() => {
       return null;
     } catch { return null; }
   }
-  function _sub() { return _items.reduce((s, c) => s + c.price * c.qty, 0); }
+  function _sub()   { return _items.reduce((s, c) => s + c.price * c.qty, 0); }
+  function _grand() { return Math.max(0, _sub() - _couponDiscount) + (_zone?.fee ?? 0); }
 
   /* ── RENDER ── */
   function _render() {
     const body = document.getElementById('checkout-modal-body');
     if (!body) return;
-    body.innerHTML = `${_progressBar()}<div id="co-step-body">${_stepBody()}</div>`;
+    if (_step <= 1) {
+      body.innerHTML = `${_progressBar()}<div id="co-step-body">${_stepBody()}</div>`;
+    } else {
+      body.innerHTML = `
+        ${_progressBar()}
+        <div class="co-layout">
+          <div class="co-main" id="co-step-body">${_stepBody()}</div>
+          <div class="co-sidebar">${_sidebar()}</div>
+        </div>`;
+    }
     _bind();
   }
 
@@ -272,7 +286,9 @@ const Checkout = (() => {
             placeholder="e.g. Call when you arrive, gate code…">
         </div>
 
-        <div id="co-bd-wrap">${_breakdown(_sub(), z.fee)}</div>
+        <div class="co-est-delivery">
+          🚚 Estimated delivery: 2–3 business days after order confirmation
+        </div>
         <div class="co-nav">
           ${!_user ? `<button class="btn btn-ghost" id="co-back">← Back</button>` : '<span></span>'}
           <button class="btn btn-primary" id="co-next">Continue to Payment →</button>
@@ -284,7 +300,7 @@ const Checkout = (() => {
      STEP 3 — PAYMENT
      ═══════════════════════════════ */
   function _step3() {
-    const total = _sub() + (_zone?.fee ?? 0);
+    const total = _grand();
     return `
       <div class="co-section">
         <h3 class="co-title">Payment Method</h3>
@@ -297,7 +313,6 @@ const Checkout = (() => {
             </button>`).join('')}
         </div>
         <div id="co-pay-detail"></div>
-        ${_breakdown(_sub(), _zone?.fee ?? 0)}
         <div class="co-nav">
           <button class="btn btn-ghost" id="co-back">← Back</button>
           <button class="btn btn-primary co-place-btn" id="co-place-btn">
@@ -305,13 +320,19 @@ const Checkout = (() => {
             Pay KES ${total.toLocaleString()}
           </button>
         </div>
+        <div class="co-pay-trust">
+          <div class="co-pay-trust-item">🔒 SSL Secure</div>
+          <div class="co-pay-trust-item">📱 M-PESA</div>
+          <div class="co-pay-trust-item">💳 Cards</div>
+          <div class="co-pay-trust-item">💯 Authentic</div>
+        </div>
       </div>`;
   }
 
   function _renderPayDetail() {
     const el    = document.getElementById('co-pay-detail');
     if (!el) return;
-    const total = _sub() + (_zone?.fee ?? 0);
+    const total = _grand();
 
     if (_payMethod === 'mpesa') {
       el.innerHTML = `
@@ -386,7 +407,7 @@ const Checkout = (() => {
   function _renderConfirmation(order) {
     const sub   = _sub();
     const fee   = _zone?.fee ?? 0;
-    const total = sub + fee;
+    const total = _grand();
     const first = _user?.name?.split(' ')[0] || 'there';
 
     document.getElementById('checkout-modal-body').innerHTML = `
@@ -401,8 +422,9 @@ const Checkout = (() => {
             📱 M-PESA payment recorded. Our team will verify within 5 minutes.
           </div>` : ''}
         ${_payMethod === 'cod' ? `
-          <div class="co-confirm-note co-confirm-note-green">
-            🛵 Our rider will contact you at <strong>${_user?.phone || 'your number'}</strong> shortly.
+          <div class="co-confirm-note" style="background:#FEF9C3;border:1.5px solid #F59E0B;color:#92400E">
+            ⚠️ <strong>NOT PAID</strong> — Payment will be collected on delivery.<br>
+            Our rider will contact you at <strong>${_user?.phone || _user?.email || 'your contact'}</strong> shortly.
           </div>` : ''}
 
         <div class="co-confirm-items">
@@ -411,6 +433,11 @@ const Checkout = (() => {
               <span>${c.emoji || ''} ${c.name} ×${c.qty}</span>
               <span>KES ${(c.price * c.qty).toLocaleString()}</span>
             </div>`).join('')}
+          ${_couponDiscount > 0 ? `
+          <div class="co-ci-row" style="color:var(--ok)">
+            <span>Coupon (${_couponCode})</span>
+            <span>−KES ${_couponDiscount.toLocaleString()}</span>
+          </div>` : ''}
           <div class="co-ci-row co-ci-del">
             <span>🛵 Delivery · ${_zone?.label || ''}</span>
             <span>${fee === 0 ? '<span style="color:var(--ok);font-weight:700">FREE</span>' : 'KES '+fee.toLocaleString()}</span>
@@ -457,56 +484,86 @@ const Checkout = (() => {
   }
 
   function _printReceipt(order, total) {
-    const fee  = _zone?.fee ?? 0;
-    const sub  = total - fee;
-    const win  = window.open('', '_blank', 'width=600,height=800');
-    const date = new Date().toLocaleString('en-KE');
+    const fee      = _zone?.fee ?? 0;
+    const sub      = _sub();
+    const win      = window.open('', '_blank', 'width=620,height=860');
+    const date     = new Date().toLocaleString('en-KE');
+    const isCod    = _payMethod === 'cod';
+    const logoUrl  = window.location.origin + '/assets/images/logo.jpeg';
+    const payLabel = isCod ? 'Pay on Delivery' : _payMethod === 'mpesa' ? 'M-PESA' : 'Card';
+    const payStatusHtml = isCod
+      ? `<div style="margin:.75rem 0;padding:.6rem 1rem;background:#FEF9C3;border:2px solid #F59E0B;border-radius:8px;text-align:center;font-weight:700;font-size:.95rem;color:#92400E">
+           ⚠️ NOT PAID — Payment to be collected on delivery
+         </div>`
+      : `<div style="margin:.75rem 0;padding:.6rem 1rem;background:#DCFCE7;border:2px solid #22C55E;border-radius:8px;text-align:center;font-weight:700;font-size:.95rem;color:#14532D">
+           ✅ PAID — ${payLabel}
+         </div>`;
+
     win.document.write(`<!DOCTYPE html><html><head><title>Receipt ${order.id}</title>
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:Arial,sans-serif;padding:2rem;max-width:480px;margin:0 auto;color:#111}
-      .hd{text-align:center;border-bottom:2px solid #1455A4;padding-bottom:1rem;margin-bottom:1rem}
-      .hd h1{color:#1455A4;font-size:1.4rem}
-      .hd p{font-size:.8rem;color:#555}
+      body{font-family:Arial,sans-serif;padding:2rem;max-width:520px;margin:0 auto;color:#111}
+      .hd{display:flex;align-items:center;gap:1rem;border-bottom:2.5px solid #1455A4;padding-bottom:1rem;margin-bottom:1rem}
+      .hd img{width:56px;height:56px;object-fit:contain;border-radius:8px}
+      .hd-text h1{color:#1455A4;font-size:1.3rem;font-weight:800;line-height:1.2}
+      .hd-text p{font-size:.7rem;color:#777;margin-top:.25rem}
+      .hd-addr{font-size:.7rem;color:#555;margin-top:.2rem}
       .oid{background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:8px;padding:.5rem 1rem;text-align:center;font-weight:700;font-size:.95rem;color:#1E40AF;margin:.75rem 0}
+      .cust{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:.6rem .875rem;font-size:.8rem;color:#475569;margin-bottom:.75rem;line-height:1.6}
       table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.875rem}
-      td{padding:.4rem .25rem;border-bottom:1px solid #EEE}
-      td:last-child{text-align:right;font-weight:600}
-      .tot{font-weight:700;font-size:1rem;color:#1455A4}
-      .ft{text-align:center;margin-top:1.5rem;font-size:.75rem;color:#888}
-      @media print{button{display:none}}
+      th{text-align:left;padding:.4rem .5rem;border-bottom:2px solid #1455A4;color:#1455A4;font-size:.75rem;text-transform:uppercase}
+      th:nth-child(2){text-align:center}
+      th:last-child{text-align:right}
+      td{padding:.5rem .5rem;border-bottom:1px solid #EEE;vertical-align:middle}
+      td:nth-child(2){text-align:center}
+      td:last-child{text-align:right;font-weight:700;white-space:nowrap}
+      .tot td{font-weight:700;font-size:1rem;color:#1455A4;border-top:2px solid #1455A4;border-bottom:none;padding-top:.5rem}
+      .ft{text-align:center;margin-top:1.5rem;font-size:.75rem;color:#888;line-height:1.7}
+      .print-btn{display:block;width:100%;margin-top:1.25rem;padding:.75rem;background:#1455A4;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;font-weight:700}
+      @media print{.print-btn{display:none}}
     </style></head><body>
     <div class="hd">
-      <h1>Inspiring Beauty Hub</h1>
-      <p>Order Receipt · ${date}</p>
+      <img src="${logoUrl}" alt="IBH Logo" onerror="this.style.display='none'">
+      <div class="hd-text">
+        <h1>Inspiring Beauty Hub</h1>
+        <p class="hd-addr">IBH BBS Mall · Eastleigh · CBD, Nairobi, Kenya</p>
+        <p>Tel: +254 758 284 018 &nbsp;|&nbsp; inspiringbeautyhub@gmail.com</p>
+        <p>Order Receipt &nbsp;·&nbsp; ${date}</p>
+      </div>
     </div>
-    <div class="oid">${order.id}</div>
-    <p style="font-size:.8rem;color:#555;margin-bottom:.5rem">
-      Customer: ${_user?.name || 'Guest'} · ${_user?.phone || ''}<br>
-      Delivery: ${_address} (${_zone?.label || ''})
-    </p>
+    <div class="oid">Order ID: ${order.id}</div>
+    ${payStatusHtml}
+    <div class="cust">
+      <strong>Customer:</strong> ${_user?.name || 'Guest'}<br>
+      ${_user?.phone ? `<strong>Phone:</strong> ${_user.phone}<br>` : ''}
+      ${_user?.email ? `<strong>Email:</strong> ${_user.email}<br>` : ''}
+      <strong>Delivery Zone:</strong> ${_zone?.label || 'N/A'}<br>
+      <strong>Delivery Address:</strong> ${_address || 'N/A'}
+    </div>
     <table>
-      <thead><tr><td><b>Item</b></td><td><b>Qty</b></td><td><b>Price</b></td></tr></thead>
+      <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
       <tbody>
-        ${_items.map(c => `<tr><td>${c.name}</td><td>${c.qty}</td><td>KES ${(c.price*c.qty).toLocaleString()}</td></tr>`).join('')}
-        <tr><td colspan="2">Subtotal</td><td>KES ${sub.toLocaleString()}</td></tr>
-        <tr><td colspan="2">Delivery</td><td>${fee===0?'FREE':'KES '+fee.toLocaleString()}</td></tr>
+        ${_items.map(c => `<tr><td>${c.name}<br><small style="color:#94A3B8">${c.brand}</small></td><td>${c.qty}</td><td>KES ${(c.price*c.qty).toLocaleString()}</td></tr>`).join('')}
+        <tr><td colspan="2" style="color:#555">Subtotal</td><td>KES ${sub.toLocaleString()}</td></tr>
+        ${_couponDiscount > 0 ? `<tr><td colspan="2" style="color:#22C55E">Coupon (${_couponCode})</td><td style="color:#22C55E">−KES ${_couponDiscount.toLocaleString()}</td></tr>` : ''}
+        <tr><td colspan="2" style="color:#555">Delivery (${_zone?.label || ''})</td><td>${fee===0?'<span style="color:#22C55E">FREE</span>':'KES '+fee.toLocaleString()}</td></tr>
         <tr class="tot"><td colspan="2"><b>TOTAL</b></td><td>KES ${total.toLocaleString()}</td></tr>
       </tbody>
     </table>
-    <p style="font-size:.8rem">Payment: ${_payMethod.toUpperCase()}</p>
+    <p style="font-size:.8rem;color:#555;margin-top:.5rem">Payment Method: <strong>${payLabel}</strong></p>
     <div class="ft">
-      Thank you for shopping at Inspiring Beauty Hub!<br>
-      Eastleigh · CBD · Westlands &nbsp;|&nbsp; info@ibh.co.ke
+      ✨ Thank you for shopping at Inspiring Beauty Hub!<br>
+      Premium Fragrances &amp; Beauty · Nairobi, Kenya<br>
+      📞 +254 758 284 018 &nbsp;|&nbsp; 📧 inspiringbeautyhub@gmail.com
     </div>
-    <br><button onclick="window.print()" style="width:100%;padding:.75rem;background:#1455A4;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer">🖨️ Print</button>
+    <button class="print-btn" onclick="window.print()">🖨️ Print Receipt</button>
     </body></html>`);
     win.document.close();
   }
 
   /* ── price breakdown ── */
   function _breakdown(sub, fee) {
-    const total = sub + fee;
+    const total = _grand();
     return `
       <div class="co-breakdown">
         ${_items.map(c => `
@@ -514,6 +571,11 @@ const Checkout = (() => {
             <span>${c.imageMain ? `<img src="${c.imageMain}" class="co-bd-img" alt="">` : c.emoji} ${c.name} ×${c.qty}</span>
             <span>KES ${(c.price*c.qty).toLocaleString()}</span>
           </div>`).join('')}
+        ${_couponDiscount > 0 ? `
+        <div class="co-bd-row" style="color:var(--ok)">
+          <span>Coupon (${_couponCode})</span>
+          <span>−KES ${_couponDiscount.toLocaleString()}</span>
+        </div>` : ''}
         <div class="co-bd-row co-bd-sep">
           <span>Delivery · ${(_zone || _zones[0] || Config.DELIVERY_ZONES[0]).label}</span>
           <span>${fee===0 ? '<b style="color:var(--ok)">FREE</b>' : 'KES '+fee.toLocaleString()}</span>
@@ -523,6 +585,86 @@ const Checkout = (() => {
           <span>KES ${total.toLocaleString()}</span>
         </div>
       </div>`;
+  }
+
+  /* ── Sidebar order summary (steps 2+) ── */
+  function _sidebar() {
+    const sub  = _sub();
+    const fee  = _zone?.fee ?? (_zones[0]?.fee ?? 0);
+    const itemCount = _items.reduce((s, c) => s + c.qty, 0);
+
+    return `
+      <div class="co-sidebar-inner">
+        <div class="co-sb-title">Order Summary</div>
+        <div class="co-sb-items">
+          ${_items.map(c => `
+            <div class="co-sb-item">
+              <div class="co-sb-img">
+                ${c.imageMain ? `<img src="${c.imageMain}" alt="${c.name}">` : `<span>${c.emoji}</span>`}
+                <span class="co-sb-qty">${c.qty}</span>
+              </div>
+              <div class="co-sb-info">
+                <div class="co-sb-name">${c.name}</div>
+                <div class="co-sb-brand">${c.brand}</div>
+              </div>
+              <div class="co-sb-price">KES ${(c.price * c.qty).toLocaleString()}</div>
+            </div>`).join('')}
+        </div>
+
+        <div class="co-coupon-wrap">
+          <input class="form-control" id="co-coupon-input" placeholder="Promo / coupon code" type="text">
+          <button class="btn btn-ghost" id="co-coupon-btn" type="button">Apply</button>
+        </div>
+        <div id="co-coupon-msg" style="font-size:.75rem;margin:-0.25rem 0 .625rem;display:none;color:var(--err)"></div>
+
+        <div class="co-sb-totals">
+          <div class="co-sb-row">
+            <span>Subtotal (${itemCount} item${itemCount !== 1 ? 's' : ''})</span>
+            <span>KES ${sub.toLocaleString()}</span>
+          </div>
+          <div class="co-sb-row" id="co-sb-discount-row" style="${_couponDiscount > 0 ? '' : 'display:none'}">
+            <span style="color:var(--ok)">Coupon (${_couponCode || ''})</span>
+            <span id="co-sb-discount" style="color:var(--ok)">−KES ${_couponDiscount.toLocaleString()}</span>
+          </div>
+          <div class="co-sb-row">
+            <span>Delivery</span>
+            <span id="co-sb-delivery">${fee === 0 ? '<b style="color:var(--ok)">FREE</b>' : 'KES ' + fee.toLocaleString()}</span>
+          </div>
+          <div class="co-sb-row co-sb-total">
+            <span>Total</span>
+            <span id="co-sb-grand">KES ${_grand().toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div class="co-trust-badges">
+          <div class="co-trust-item"><span class="co-trust-icon">🔒</span> Secure SSL Checkout</div>
+          <div class="co-trust-item"><span class="co-trust-icon">🛵</span> 2–3 business days delivery</div>
+          <div class="co-trust-item"><span class="co-trust-icon">↩️</span> Returns within 24hrs of purchase</div>
+          <div class="co-trust-item">
+            <span class="co-trust-icon">💬</span>
+            <a href="https://wa.me/254758284018?text=Hi%2C+I+need+help+with+my+IBH+order" target="_blank" rel="noopener"
+              style="color:var(--n-500);text-decoration:none">Need help? Chat with us</a>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function _updateSidebar(fee) {
+    const delivEl    = document.getElementById('co-sb-delivery');
+    const grandEl    = document.getElementById('co-sb-grand');
+    const discRow    = document.getElementById('co-sb-discount-row');
+    const discEl     = document.getElementById('co-sb-discount');
+    if (delivEl) delivEl.innerHTML = fee === 0 ? '<b style="color:var(--ok)">FREE</b>' : 'KES ' + fee.toLocaleString();
+    if (grandEl) grandEl.textContent = 'KES ' + _grand().toLocaleString();
+    if (discRow) discRow.style.display = _couponDiscount > 0 ? '' : 'none';
+    if (discEl)  discEl.textContent = '−KES ' + _couponDiscount.toLocaleString();
+  }
+
+  function _refreshSummaryTotals() {
+    const fee = _zone?.fee ?? 0;
+    _updateSidebar(fee);
+    const grandEl = document.getElementById('co-sb-grand');
+    if (grandEl) grandEl.textContent = 'KES ' + _grand().toLocaleString();
   }
 
   /* ═══════════════════════════════
@@ -571,8 +713,7 @@ const Checkout = (() => {
         e.stopPropagation();
         const opt = e.target.options[e.target.selectedIndex];
         _zone = { label: opt.dataset.label, fee: Number(e.target.value) };
-        const bdWrap = document.getElementById('co-bd-wrap');
-        if (bdWrap) bdWrap.innerHTML = _breakdown(_sub(), _zone.fee);
+        _updateSidebar(_zone.fee);
         const badge = document.getElementById('co-zone-badge-text');
         const feeBadge = document.getElementById('co-zone-badge-fee');
         if (badge) badge.textContent = _zone.label;
@@ -581,6 +722,40 @@ const Checkout = (() => {
           feeBadge.style.color = _zone.fee === 0 ? 'var(--ok)' : 'var(--blue-d)';
         }
       });
+    }
+
+    const couponBtn   = document.getElementById('co-coupon-btn');
+    const couponInput = document.getElementById('co-coupon-input');
+    if (couponBtn) {
+      const doValidate = async () => {
+        const code = (couponInput?.value || '').trim().toUpperCase();
+        const msg  = document.getElementById('co-coupon-msg');
+        if (!msg) return;
+        msg.style.display = 'block';
+        if (!code) { msg.style.color = 'var(--err)'; msg.textContent = 'Enter a promo code.'; return; }
+        couponBtn.disabled = true; couponBtn.textContent = '…';
+        try {
+          const result = await API.validateCoupon(code, _sub());
+          _couponCode     = result.code;
+          _couponDiscount = result.discount;
+          msg.style.color = 'var(--success)';
+          const label = result.type === 'percent'
+            ? `${result.value}% off`
+            : `KES ${result.value} off`;
+          msg.textContent = `✓ "${result.code}" applied — ${label} (−KES ${result.discount.toLocaleString()})`;
+          couponBtn.textContent = '✓';
+          couponBtn.disabled = false;
+          _refreshSummaryTotals();
+        } catch (err) {
+          _couponCode = ''; _couponDiscount = 0;
+          msg.style.color = 'var(--err)';
+          msg.textContent = err.message || 'Invalid coupon code';
+          couponBtn.textContent = 'Apply'; couponBtn.disabled = false;
+          _refreshSummaryTotals();
+        }
+      };
+      couponBtn.addEventListener('click', e => { e.stopPropagation(); doValidate(); });
+      couponInput?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); doValidate(); } });
     }
 
     const backBtn = document.getElementById('co-back');
@@ -886,7 +1061,7 @@ const Checkout = (() => {
   async function _placeOrder(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
 
-    const total = _sub() + (_zone?.fee ?? 0);
+    const total = _grand();
 
     if (_payMethod === 'mpesa') {
       const mpPhone = document.getElementById('co-mpesa-phone')?.value?.trim();
@@ -913,10 +1088,12 @@ const Checkout = (() => {
           zone:    _zone?.label   || '',
           notes:   _notes,
         },
-        items:    _items,
+        items:           _items,
         total,
-        payment:  _payMethod,
+        payment:         _payMethod,
         mpesaRef,
+        coupon_code:     _couponCode     || null,
+        coupon_discount: _couponDiscount || 0,
       });
 
       if (!_buyNow) {

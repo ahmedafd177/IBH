@@ -2,8 +2,8 @@
    CONFIG
    ═══════════════════════════════════════ */
 const Config = {
-  BASE_URL:          '/api',
-  USE_LOCAL_STORAGE: false,
+  BASE_URL:          null,
+  USE_LOCAL_STORAGE: true,
 
   LS_KEYS: {
     PRODUCTS:   'ibh_products',
@@ -42,8 +42,7 @@ const Config = {
   ],
 
   BRANCHES: [
-    { name: 'Eastleigh Branch',  phone: '+254 700 000 001' },
-    { name: 'CBD Branch',        phone: '+254 700 000 002' },
-    { name: 'Westlands Branch',  phone: '+254 700 000 003' },
+    { name: 'CBD Branch',                       phone: '+254719795442' },
+    { name: 'Eastleigh Branch — A Trendy Scents', phone: '+254722953639' },
   ],
 };

@@ -49,9 +49,11 @@ const API = (() => {
       if (filters.brand)   ps = ps.filter(p => p.brand === filters.brand);
       if (filters.gender)  ps = ps.filter(p => p.gender === filters.gender || p.gender === 'All');
       if (filters.subcat)  ps = ps.filter(p => p.subcat === filters.subcat);
-      if (filters.isNew)   ps = ps.filter(p => p.isNew);
-      if (filters.isTrend) ps = ps.filter(p => p.isTrend);
-      if (filters.isFeat)  ps = ps.filter(p => p.isFeat);
+      if (filters.isNew)    ps = ps.filter(p => p.isNew);
+      if (filters.isTrend)  ps = ps.filter(p => p.isTrend);
+      if (filters.isFeat)   ps = ps.filter(p => p.isFeat);
+      if (filters.isOnSale) ps = ps.filter(p => p.isOnSale);
+      if (filters.isHot)    ps = ps.filter(p => p.isHot);
       if (filters.search) {
         const q = filters.search.toLowerCase();
         ps = ps.filter(p =>
@@ -294,6 +296,15 @@ const API = (() => {
     return api(`/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: { status } });
   }
 
+  async function deleteOrder(id) {
+    if (ls()) {
+      const orders = (lsGet(K.ORDERS) || []).filter(x => x.id !== id);
+      lsSet(K.ORDERS, orders);
+      return;
+    }
+    return api(`/orders/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  }
+
   /* ─────────────── USERS ─────────────── */
   async function createUser({ name, phone, email = '', role = 'customer', password = 'ibh2025' }) {
     if (ls()) {
@@ -315,6 +326,16 @@ const API = (() => {
       return;
     }
     return api(`/users/${id}`, { method: 'PUT', body: { role, ...extra } });
+  }
+
+  async function resetUserPassword(id, password) {
+    if (ls()) {
+      const accounts = JSON.parse(localStorage.getItem('ibh_accounts') || '[]');
+      const a = accounts.find(x => String(x.id) === String(id) || x.phone === id);
+      if (a) { a.pw = btoa(password); localStorage.setItem('ibh_accounts', JSON.stringify(accounts)); }
+      return;
+    }
+    return api(`/users/${id}/password`, { method: 'PUT', body: { password } });
   }
 
   async function deleteUser(id) {
@@ -448,6 +469,57 @@ const API = (() => {
     return api('/reviews', { method: 'POST', body: { product_id, name, rating, comment } });
   }
 
+  /* ─────────────── COUPONS ─────────────── */
+  async function getCoupons(adminOnly = false) {
+    if (ls() && !adminOnly) return [];
+    return api('/coupons' + (adminOnly ? '?admin=1' : ''));
+  }
+  async function addCoupon(data) {
+    if (ls()) return;
+    return api('/coupons', { method: 'POST', body: data });
+  }
+  async function updateCoupon(id, data) {
+    if (ls()) return;
+    return api(`/coupons/${id}`, { method: 'PUT', body: data });
+  }
+  async function deleteCoupon(id) {
+    if (ls()) return;
+    return api(`/coupons/${id}`, { method: 'DELETE' });
+  }
+  async function validateCoupon(code, subtotal) {
+    if (ls()) throw new Error('Coupons require a server connection');
+    return api('/coupons/validate', { method: 'POST', body: { code, subtotal } });
+  }
+
+  /* ─────────────── BRANCHES ─────────────── */
+  async function getBranches() {
+    if (ls()) return [];
+    return api('/branches');
+  }
+  async function addBranch(data)       { return api('/branches',      { method: 'POST',   body: data }); }
+  async function updateBranch(id, data){ return api(`/branches/${id}`,{ method: 'PUT',    body: data }); }
+  async function deleteBranch(id)      { return api(`/branches/${id}`,{ method: 'DELETE' }); }
+
+  /* ─────────────── SETTINGS ─────────────── */
+  async function getSettings() {
+    if (ls()) return {};
+    return api('/settings');
+  }
+  async function saveSettings(data) {
+    if (ls()) return;
+    return api('/settings', { method: 'PUT', body: data });
+  }
+
+  /* ─────────────── ORDER NOTES ─────────────── */
+  async function getOrderNotes(orderId) {
+    if (ls()) return [];
+    return api(`/orders/${encodeURIComponent(orderId)}/notes`);
+  }
+  async function addOrderNote(orderId, note, is_internal = false) {
+    if (ls()) return;
+    return api(`/orders/${encodeURIComponent(orderId)}/notes`, { method: 'POST', body: { note, is_internal } });
+  }
+
   return {
     init,
     getProducts, getProduct, addProduct, updateProduct, deleteProduct,
@@ -456,11 +528,15 @@ const API = (() => {
     getMainCategoriesAsync, updateMainCategory,
     getCart, saveCart,
     getWishlist, saveWishlist,
-    getOrders, createOrder, updateOrderStatus,
-    getUsers, createUser, updateUserRole, deleteUser,
+    getOrders, createOrder, updateOrderStatus, deleteOrder,
+    getUsers, createUser, updateUserRole, deleteUser, resetUserPassword,
     uploadImage,
     getDeliveryAreas, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea,
     getProductGenders, getProductSubcats,
     getReviews, addReview,
+    getCoupons, addCoupon, updateCoupon, deleteCoupon, validateCoupon,
+    getBranches, addBranch, updateBranch, deleteBranch,
+    getSettings, saveSettings,
+    getOrderNotes, addOrderNote,
   };
 })();

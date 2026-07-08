@@ -1,7 +1,7 @@
 <!-- HEADER -->
 <header id="header" role="banner">
   <div class="container header-inner">
-
+    <!-- Logo: always far-left -->
     <a href="#" class="header-logo" id="logo-link" aria-label="Inspiring Beauty Hub home">
       <img src="assets/images/logo.jpeg" alt="" class="logo-img" aria-hidden="true" />
       <div class="logo-text">
@@ -9,11 +9,12 @@
         <span class="logo-tagline">Premium Fragrances &amp; Beauty</span>
       </div>
     </a>
-
+    <!-- Hamburger: after logo → visible on mobile only -->
+    <button class="hamburger" id="menu-toggle" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
     <nav class="header-nav" aria-label="Main navigation">
       <ul class="nav-list" role="list">
-        <li class="nav-item"><a href="#" class="nav-link" id="nav-home-link">Home</a></li>
-
         <li class="nav-item has-dropdown">
           <a href="#" class="nav-link" data-cat="perfume" aria-haspopup="true">
             Perfume <svg class="nav-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
@@ -22,7 +23,6 @@
             <div class="dropdown-inner" id="nav-dropdown-inner-perfume"></div>
           </div>
         </li>
-
         <li class="nav-item has-dropdown">
           <a href="#" class="nav-link" data-cat="hair" aria-haspopup="true">
             Hair Care <svg class="nav-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
@@ -31,7 +31,6 @@
             <div class="dropdown-inner" id="nav-dropdown-inner-hair"></div>
           </div>
         </li>
-
         <li class="nav-item has-dropdown">
           <a href="#" class="nav-link" data-cat="body" aria-haspopup="true">
             Body Care <svg class="nav-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
@@ -40,7 +39,6 @@
             <div class="dropdown-inner" id="nav-dropdown-inner-body"></div>
           </div>
         </li>
-
         <li class="nav-item has-dropdown">
           <a href="#" class="nav-link" data-action="show-brands" aria-haspopup="true">
             Brands <svg class="nav-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
@@ -55,65 +53,85 @@
             </div>
           </div>
         </li>
-
         <li class="nav-item has-dropdown">
           <a href="#" class="nav-link" aria-haspopup="true">
             Categories <svg class="nav-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
           </a>
-          <div class="nav-dropdown" role="menu">
-            <div class="dropdown-inner">
-              <div class="dropdown-col">
-                <p class="dropdown-heading">All Subcategories</p>
-                <ul id="nav-categories-list"></ul>
+          <div class="nav-dropdown nav-dropdown-cats" role="menu">
+            <div class="cats-mega-wrap">
+              <div class="cats-mega-col" id="cats-mega-perfume">
+                <div class="cats-mega-head">
+                  <span class="cats-mega-icon cats-mega-icon--perfume">🌸</span>
+                  <a href="#" data-cat="perfume" class="cats-mega-title">Perfume</a>
+                </div>
+                <ul class="cats-mega-list" id="cats-mega-list-perfume"></ul>
+                <a href="#" data-cat="perfume" class="cats-mega-all">View all Perfume →</a>
+              </div>
+              <div class="cats-mega-col" id="cats-mega-hair">
+                <div class="cats-mega-head">
+                  <span class="cats-mega-icon cats-mega-icon--hair">💇</span>
+                  <a href="#" data-cat="hair" class="cats-mega-title">Hair Care</a>
+                </div>
+                <ul class="cats-mega-list" id="cats-mega-list-hair"></ul>
+                <a href="#" data-cat="hair" class="cats-mega-all">View all Hair →</a>
+              </div>
+              <div class="cats-mega-col" id="cats-mega-body">
+                <div class="cats-mega-head">
+                  <span class="cats-mega-icon cats-mega-icon--body">🧴</span>
+                  <a href="#" data-cat="body" class="cats-mega-title">Body Care</a>
+                </div>
+                <ul class="cats-mega-list" id="cats-mega-list-body"></ul>
+                <a href="#" data-cat="body" class="cats-mega-all">View all Body →</a>
               </div>
             </div>
           </div>
         </li>
-
-        <li class="nav-item"><a href="/about" class="nav-link" data-action="show-about">About</a></li>
       </ul>
     </nav>
-
-    <!-- Inline search bar (desktop) -->
-    <div class="header-search-bar" id="header-search-bar" role="search">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="search" id="search-input" class="search-input" placeholder="Search products, brands…" autocomplete="off" aria-label="Search" />
-      <button class="search-clear" id="search-clear" aria-label="Clear" hidden>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-
     <div class="header-actions">
-      <button class="header-btn track-order-btn" id="track-order-btn" aria-label="Track your order" title="Track Order">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <!-- Search toggle — opens the full-width search overlay -->
+      <button class="header-btn search-toggle-btn" id="search-toggle" aria-label="Search" title="Search">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
-
-      <button class="header-btn" id="wishlist-btn" aria-label="Wishlist" title="Wishlist">
+      <!-- Hidden on mobile — accessible via the mobile-nav drawer instead -->
+      <button class="header-btn track-order-btn mob-hide" id="track-order-btn" aria-label="Track your order" title="Track Order">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span class="track-order-label">Track Order</span>
+      </button>
+      <button class="header-btn mob-hide" id="wishlist-btn" aria-label="Wishlist" title="Wishlist">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         <span class="header-btn-badge" id="wishlist-count" hidden>0</span>
       </button>
-
       <button class="header-btn cart-btn" id="cart-btn" aria-label="Shopping cart" title="Cart">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         <span class="header-btn-badge" id="cart-count" hidden>0</span>
       </button>
-
       <button class="header-btn auth-btn-pill" id="auth-btn" aria-label="Sign in" title="Sign In / My Account">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
         <span id="auth-btn-label" class="auth-btn-name"></span>
       </button>
-
-      <button class="header-btn" id="admin-btn" aria-label="Admin panel" title="Admin">
+      <button class="header-btn mob-hide" id="admin-btn" aria-label="Admin panel" title="Admin">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       </button>
-
-      <button class="hamburger" id="menu-toggle" aria-label="Open menu" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
     </div>
+  </div>
 
-    <div class="search-results" id="search-results" hidden aria-live="polite">
-      <div class="container"><div id="search-results-list"></div></div>
+  <!-- ── Full-width Search Overlay ── -->
+  <div class="search-overlay" id="search-overlay" role="search" aria-hidden="true">
+    <div class="search-overlay-panel">
+      <div class="container search-overlay-bar">
+        <svg class="search-overlay-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="search" id="search-input" class="search-overlay-input"
+          placeholder="Search products, brands…"
+          autocomplete="off" aria-label="Search" spellcheck="false" />
+        <button class="search-overlay-close" id="search-overlay-close" aria-label="Close search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="search-results" id="search-results" hidden aria-live="polite">
+        <div class="container"><div id="search-results-list"></div></div>
+      </div>
     </div>
+    <div class="search-overlay-backdrop" id="search-overlay-backdrop"></div>
   </div>
 </header>

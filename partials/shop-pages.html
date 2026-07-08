@@ -70,7 +70,7 @@
           <div class="feature-icon" aria-hidden="true">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           </div>
-          <div class="feature-text"><strong>Easy Returns</strong><span>Hassle-free return policy</span></div>
+          <div class="feature-text"><strong>24hr Returns</strong><span>Returns accepted within 24 hours of purchase</span></div>
         </div>
       </div>
 
@@ -101,6 +101,69 @@
     </div>
   </section>
 
+  <!-- TERMS & CONDITIONS PAGE -->
+  <section id="terms-page" class="section" hidden aria-labelledby="terms-h">
+    <div class="container" style="max-width:820px">
+      <div class="shop-header">
+        <div>
+          <p class="sec-eyebrow">Legal</p>
+          <h2 class="sec-title" id="terms-h">Terms &amp; Conditions</h2>
+        </div>
+        <button class="btn btn-ghost" id="terms-back">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Home
+        </button>
+      </div>
+
+      <div style="background:var(--err-bg);border:1.5px solid var(--err);border-radius:var(--r-lg);padding:1.25rem 1.5rem;margin:1.5rem 0 2rem">
+        <h3 style="font-size:1rem;color:var(--err);margin:0 0 .5rem">⚠ Returns Policy — Cosmetics &amp; Beauty Products</h3>
+        <p style="font-size:.9375rem;color:var(--n-700);margin:0;line-height:1.6">
+          Due to the hygienic and perishable nature of cosmetics, fragrances, and beauty products, <strong>we do not accept
+          returns or exchanges once a product has left our store or been delivered</strong>, except within
+          <strong>24 hours of purchase</strong>, and only when the item is unopened, unused, in its original sealed
+          packaging, and accompanied by proof of purchase (receipt or order ID). This policy protects the safety and
+          authenticity of every product we sell.
+        </p>
+      </div>
+
+      <div class="terms-body" style="font-size:.9375rem;color:var(--n-700);line-height:1.75">
+        <h3 style="color:var(--blue-d);font-size:1.0625rem;margin:1.5rem 0 .5rem">1. Returns &amp; Refunds</h3>
+        <ul style="padding-left:1.25rem;margin:0 0 .5rem">
+          <li>Returns are accepted <strong>only within 24 hours</strong> of the purchase or delivery time shown on your receipt/order.</li>
+          <li>The product must be unopened, unused, and in its original sealed packaging — for hygiene reasons, opened or used cosmetics, perfumes, and body care products cannot be returned under any circumstance.</li>
+          <li>A valid receipt, order ID, or proof of purchase is required for every return.</li>
+          <li>Items damaged, wrong, or defective on arrival are eligible for a replacement or refund regardless of the 24-hour window — contact us immediately with photos of the issue.</li>
+          <li>Refunds, once approved, are issued via the original payment method (M-PESA, card) or as store credit, within 3–5 business days.</li>
+        </ul>
+
+        <h3 style="color:var(--blue-d);font-size:1.0625rem;margin:1.5rem 0 .5rem">2. Orders &amp; Payment</h3>
+        <ul style="padding-left:1.25rem;margin:0 0 .5rem">
+          <li>We accept M-PESA, card payments, and cash/pay-on-delivery at select branches.</li>
+          <li>Orders are confirmed once payment is received or, for pay-on-delivery, once the order is placed.</li>
+          <li>Prices are listed in Kenyan Shillings (KES) and may change without prior notice; the price at checkout is the price charged.</li>
+        </ul>
+
+        <h3 style="color:var(--blue-d);font-size:1.0625rem;margin:1.5rem 0 .5rem">3. Delivery</h3>
+        <ul style="padding-left:1.25rem;margin:0 0 .5rem">
+          <li>Delivery fees and timelines vary by zone and are shown at checkout before payment.</li>
+          <li>Please inspect your order on arrival — report any damage or discrepancy to us immediately.</li>
+        </ul>
+
+        <h3 style="color:var(--blue-d);font-size:1.0625rem;margin:1.5rem 0 .5rem">4. Product Authenticity</h3>
+        <ul style="padding-left:1.25rem;margin:0 0 .5rem">
+          <li>All products sold by Inspiring Beauty Hub are 100% genuine and sourced from authorised suppliers.</li>
+        </ul>
+
+        <h3 style="color:var(--blue-d);font-size:1.0625rem;margin:1.5rem 0 .5rem">5. Contact Us</h3>
+        <p style="margin:0 0 1.5rem">
+          Questions about an order or this policy? Reach us on WhatsApp at
+          <a href="https://wa.me/254758284018" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">+254 758 284 018</a>
+          or email <a href="mailto:inspiringbeautyhub@gmail.com" style="color:var(--blue);font-weight:600">inspiringbeautyhub@gmail.com</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+
   <!-- SHOP (dynamic) -->
   <section id="shop" class="section" hidden aria-labelledby="shop-h">
     <div class="container">
@@ -114,14 +177,36 @@
           Back to Home
         </button>
       </div>
-      <div class="products-grid" id="shop-grid" aria-live="polite"></div>
-      <div id="shop-empty" hidden>
-        <div class="empty-state">
-          <span class="empty-icon">&#128269;</span>
-          <h3>No products found</h3>
-          <p>Try adjusting your search or filters</p>
+      <div class="shop-layout">
+        <aside class="shop-sidebar" id="shop-sidebar" aria-label="Filter products">
+          <div class="shop-sidebar-inner">
+            <p class="sidebar-loading">Loading filters…</p>
+          </div>
+        </aside>
+        <div class="shop-main">
+          <div class="products-grid" id="shop-grid" aria-live="polite"></div>
+          <div id="shop-empty" hidden>
+            <div class="empty-state">
+              <span class="empty-icon">&#128269;</span>
+              <h3>No products found</h3>
+              <p>Try adjusting your search or filters</p>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- PRODUCT DETAIL PAGE -->
+  <section id="product-detail" class="section" hidden aria-labelledby="pdp-h">
+    <div class="container">
+      <div class="shop-header">
+        <button class="btn btn-ghost" id="pdp-back">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back
+        </button>
+      </div>
+      <div id="pdp-body"></div>
     </div>
   </section>
 

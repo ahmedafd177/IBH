@@ -31,7 +31,9 @@ const Cart = (() => {
     API.saveCart(cart);
     updateBadge();
     render();
-    App.toast(`${p.name} added to cart (qty: ${qty})`, 'success');
+    App.toast(`${p.name} added to cart`, 'success');
+    /* Open the cart drawer so the user sees what they added */
+    open();
   }
 
   /* ── remove ── */
@@ -95,7 +97,23 @@ const Cart = (() => {
       </div>`).join('');
 
     const sub = cart.reduce((s, c) => s + c.price * c.qty, 0);
+    const FREE_DEL_THRESHOLD = 3000;
+    const remaining = Math.max(0, FREE_DEL_THRESHOLD - sub);
+    const pct = Math.min(100, Math.round((sub / FREE_DEL_THRESHOLD) * 100));
+    const freeDelHtml = sub >= FREE_DEL_THRESHOLD
+      ? `<div class="cart-free-del">
+           <div class="cart-free-del-label"><span>🎉 You qualify for free delivery!</span></div>
+           <div class="cart-free-del-track"><div class="cart-free-del-fill" style="width:100%"></div></div>
+         </div>`
+      : `<div class="cart-free-del">
+           <div class="cart-free-del-label">
+             <span>Add <b>KES ${remaining.toLocaleString()}</b> more for free delivery</span>
+             <span>${pct}%</span>
+           </div>
+           <div class="cart-free-del-track"><div class="cart-free-del-fill" style="width:${pct}%"></div></div>
+         </div>`;
     if (foot) foot.innerHTML = `
+      ${freeDelHtml}
       <div class="cart-subtotal-row">
         <span>Subtotal (${cart.reduce((s,c)=>s+c.qty,0)} item${cart.reduce((s,c)=>s+c.qty,0)!==1?'s':''})</span>
         <strong>KES ${sub.toLocaleString()}</strong>

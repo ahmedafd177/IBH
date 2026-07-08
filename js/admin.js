@@ -10,6 +10,9 @@ const Admin = (() => {
   let _orderStatus = '';
   let _orderDate   = '';
   let _productSearch = '';
+  let _cachedStaff    = [];
+  let _cachedBranches = [];
+  let _orderMenuOutsideClickBound = false;
 
   /* ─── open / close (index.html overlay; not used in admin.html) ─── */
   async function open() {
@@ -41,7 +44,9 @@ const Admin = (() => {
       case 'add-product': content.innerHTML = await buildAddProduct();  _editingId = null; break;
       case 'users':       content.innerHTML = await buildUsers();          break;
       case 'delivery':    content.innerHTML = await buildDeliveryAreas();  break;
-      case 'settings':    content.innerHTML = buildSettings();             break;
+      case 'branches':    content.innerHTML = await buildBranches();       break;
+      case 'coupons':     content.innerHTML = await buildCoupons();        break;
+      case 'settings':    content.innerHTML = await buildSettings();       break;
     }
     bindTabEvents(tab);
   }
@@ -50,8 +55,11 @@ const Admin = (() => {
      ORDERS
   ═══════════════════════════ */
   async function buildOrders() {
-    const allOrders = await API.getOrders();
-    const products  = await API.getProducts({ admin: true });
+    const [allOrders, products, allStaff, allBranches] = await Promise.all([
+      API.getOrders(), API.getProducts({ admin: true }), API.getUsers(), API.getBranches(),
+    ]);
+    _cachedStaff    = allStaff;
+    _cachedBranches = allBranches;
     const rev     = allOrders.reduce((s, o) => s + o.total, 0);
     const pending = allOrders.filter(o => ['pending', 'confirmed'].includes(o.status)).length;
     const orders  = applyOrderFilters(allOrders);
@@ -77,7 +85,6 @@ const Admin = (() => {
           <h4>Orders ${orders.length < allOrders.length ? `<span style="color:var(--blue)">(${orders.length} of ${allOrders.length})</span>` : `(${allOrders.length})`}</h4>
         </div>
 
-        <!-- Filters -->
         <div class="order-filters">
           <input  id="ord-search"  class="order-filter-input" type="search"  placeholder="Search order #, name, phone…" value="${_orderSearch}">
           <select id="ord-status"  class="order-filter-input">
@@ -94,22 +101,28 @@ const Admin = (() => {
           <table class="admin-table">
             <thead><tr>
               <th>#</th><th>Order ID</th><th>Customer</th><th>Items</th>
-              <th>Total</th><th>Payment</th><th>Branch</th><th>Status</th><th>Update</th><th>Actions</th>
+              <th>Total</th><th>Branch</th><th>Assigned To</th><th>Status</th><th>Actions</th>
             </tr></thead>
             <tbody id="orders-tbody">
-              ${buildOrdersRows(orders)}
+              ${buildOrdersRows(orders, allStaff, allBranches)}
             </tbody>
           </table>
         </div>
       </div>`;
   }
 
-  function buildOrdersRows(orders) {
-    if (!orders.length) return `<tr><td colspan="10" style="text-align:center;padding:2.5rem;color:var(--n-400)">No orders match the current filters.</td></tr>`;
+  function buildOrdersRows(orders, allStaff = [], allBranches = []) {
+    if (!orders.length) return `<tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--n-400)">No orders match the current filters.</td></tr>`;
     const user    = window.AdminUser || {};
     const isAdmin = user.role !== 'branch_manager';
-    const branches = (window.Config?.BRANCHES || []).map(b => b.name);
-    return orders.map((o, idx) => `
+    const branchNames = allBranches.length
+      ? allBranches.map(b => b.name)
+      : (window.Config?.BRANCHES || []).map(b => b.name);
+    return orders.map((o, idx) => {
+      const staffOpts = allStaff.filter(s => ['staff','branch_manager','admin'].includes(s.role))
+        .map(s => `<option value="${s.id}" data-name="${s.name}"${s.id === o.assigned_to ? ' selected' : ''}>${s.name} (${s.role})</option>`).join('');
+      const unpaid = o.payment_status !== 'paid';
+      return `
       <tr>
         <td style="color:var(--n-400);font-size:.75rem;font-weight:600">${idx + 1}</td>
         <td>
@@ -123,33 +136,48 @@ const Admin = (() => {
         </td>
         <td>
           <span class="pill pill-processing" style="font-size:.6rem">${o.items?.length || 0} item${(o.items?.length || 0) !== 1 ? 's' : ''}</span>
-          <button class="admin-btn btn-sm" data-view-order="${o.id}"
-            style="margin-left:.25rem;background:var(--blue-xl);color:var(--blue)">View</button>
         </td>
-        <td><strong>KES ${(o.total || 0).toLocaleString()}</strong></td>
         <td>
-          <span class="pill ${o.payment === 'mpesa' ? 'pill-confirmed' : o.payment === 'cod' ? 'pill-pending' : 'pill-processing'}"
-            style="font-size:.6rem;text-transform:uppercase">${o.payment || '—'}</span>
+          <strong>KES ${(o.total || 0).toLocaleString()}</strong>
+          ${unpaid ? `<br><span style="font-size:.625rem;color:#F59E0B" title="${o.payment || ''} — unpaid">⚠ Unpaid</span>` : ''}
         </td>
         <td>
           ${isAdmin
             ? `<select class="status-select branch-select" data-branch-order-id="${o.id}" style="font-size:.7rem;padding:.25rem .4rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);outline:none;max-width:110px">
                 <option value="">Unassigned</option>
-                ${branches.map(b => `<option${b === o.branch ? ' selected' : ''}>${b}</option>`).join('')}
+                ${branchNames.map(b => `<option${b === o.branch ? ' selected' : ''}>${b}</option>`).join('')}
                </select>`
             : `<span style="font-size:.75rem;color:var(--n-600)">${o.branch || '—'}</span>`}
         </td>
-        <td><span class="pill pill-${o.status}">${o.status}</span></td>
+        <td>
+          ${isAdmin
+            ? `<select class="staff-assign-select" data-assign-order-id="${o.id}" style="font-size:.7rem;padding:.25rem .4rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);outline:none;max-width:130px">
+                <option value="">Unassigned</option>
+                ${staffOpts}
+               </select>`
+            : `<span style="font-size:.75rem;color:var(--n-600)">${o.assigned_name || '—'}</span>`}
+        </td>
         <td>
           <select class="status-select" data-order-id="${o.id}">
             ${['pending','confirmed','processing','delivered','cancelled']
               .map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('')}
           </select>
         </td>
-        <td style="white-space:nowrap">
-          <button class="admin-btn admin-btn-primary btn-sm" data-invoice="${o.id}">🖨 Print</button>
+        <td style="white-space:nowrap;position:relative">
+          <button class="admin-btn btn-sm" data-view-order="${o.id}" title="View full order"
+            style="background:var(--blue-xl);color:var(--blue);padding:.35rem .5rem">👁</button>
+          <button class="admin-btn btn-sm" data-notes-order="${o.id}" title="Notes"
+            style="background:var(--n-100);color:var(--n-700);margin-left:.25rem;padding:.35rem .5rem">📝</button>
+          <button class="admin-btn admin-btn-primary btn-sm" data-invoice="${o.id}" title="Print invoice"
+            style="margin-left:.25rem;padding:.35rem .5rem">🖨</button>
+          <button class="admin-btn btn-sm" data-order-menu-toggle="${o.id}" title="More actions"
+            style="background:var(--n-100);color:var(--n-700);margin-left:.25rem;padding:.35rem .5rem">⋮</button>
+          <div data-order-menu="${o.id}" style="display:none;position:absolute;right:.875rem;top:100%;z-index:50;background:var(--white);border:1px solid var(--n-200);border-radius:var(--r-md);box-shadow:var(--sh-lg);min-width:140px;overflow:hidden">
+            <button data-delete-order="${o.id}" style="display:flex;align-items:center;gap:.4rem;width:100%;padding:.5rem .75rem;background:none;border:none;text-align:left;font-size:.8125rem;color:var(--err);cursor:pointer">🗑 Delete Order</button>
+          </div>
         </td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   }
 
   function applyOrderFilters(orders) {
@@ -162,6 +190,166 @@ const Admin = (() => {
       const matchStatus = !_orderStatus || o.status === _orderStatus;
       const matchDate   = !_orderDate   || o.date === _orderDate;
       return matchSearch && matchStatus && matchDate;
+    });
+  }
+
+  /* ═══════════════════════════
+     ORDER DETAIL — full page
+  ═══════════════════════════ */
+  function renderOrderNotesHtml(list) {
+    return list.length
+      ? list.map(n => `
+          <div style="padding:.6rem .75rem;background:${n.is_internal ? '#FEF9C3' : 'var(--n-50)'};border-radius:var(--r-md);border:1px solid ${n.is_internal ? '#F59E0B' : 'var(--n-200)'};margin-bottom:.375rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.2rem">
+              <strong style="font-size:.75rem;color:var(--blue-d)">${n.author_name}</strong>
+              <div style="display:flex;gap:.375rem;align-items:center">
+                ${n.is_internal ? `<span style="font-size:.6rem;background:#F59E0B;color:#fff;padding:.1rem .4rem;border-radius:999px">Admin Only</span>` : ''}
+                <span style="font-size:.6875rem;color:var(--n-400)">${n.created_at?.slice(0,16).replace('T',' ') || ''}</span>
+              </div>
+            </div>
+            <p style="font-size:.8rem;color:var(--n-700);margin:0">${n.note}</p>
+          </div>`).join('')
+      : `<p style="color:var(--n-400);font-size:.8rem;text-align:center;padding:.75rem">No notes yet</p>`;
+  }
+
+  async function showOrderDetail(orderId) {
+    const content = document.getElementById('admin-content');
+    content.innerHTML = `<div class="admin-card" style="text-align:center;padding:2.5rem;color:var(--n-400)">Loading order…</div>`;
+    const [orders, notes] = await Promise.all([API.getOrders(), API.getOrderNotes(orderId)]);
+    const o = orders.find(x => x.id === orderId);
+    if (!o) { content.innerHTML = `<div class="admin-card" style="text-align:center;padding:2.5rem;color:var(--n-400)">Order not found.</div>`; return; }
+    content.innerHTML = buildOrderDetail(o, notes);
+    bindOrderDetailEvents(o);
+  }
+
+  function buildOrderDetail(o, notes) {
+    const itemsHtml = (o.items || []).map(item => `
+      <tr>
+        <td style="padding:.4rem .5rem;border-bottom:1px solid var(--n-100)">
+          <div style="display:flex;align-items:center;gap:.5rem">
+            ${item.imageMain
+              ? `<img src="${item.imageMain}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display='none'">`
+              : `<span style="font-size:1rem">${item.emoji || '📦'}</span>`}
+            <div>
+              <div style="font-size:.8rem">${item.name}</div>
+              ${item.brand ? `<div style="font-size:.7rem;color:var(--n-400)">${item.brand}${item.size ? ' · ' + item.size : ''}</div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td style="padding:.4rem .5rem;text-align:center;border-bottom:1px solid var(--n-100);font-size:.8rem">${item.qty}</td>
+        <td style="padding:.4rem .5rem;text-align:right;border-bottom:1px solid var(--n-100);font-size:.8rem;font-weight:600">KES ${((item.price||0)*(item.qty||1)).toLocaleString()}</td>
+      </tr>`).join('');
+
+    return `
+      <div class="admin-card" style="max-width:720px;margin:0 auto">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">
+          <div>
+            <button id="odm-back" class="admin-btn" style="background:var(--n-100);color:var(--n-700);margin-bottom:.75rem">← Back to Orders</button>
+            <h3 style="font-size:1.125rem;font-weight:700;color:var(--blue-d)">${o.id}</h3>
+            <span style="font-size:.75rem;color:var(--n-400)">${o.date} ${o.time || ''}</span>
+          </div>
+          <span class="pill pill-${o.status}" style="font-size:.75rem">${o.status}</span>
+        </div>
+
+        <div style="background:var(--n-50);border-radius:var(--r-lg);padding:.875rem;margin-bottom:.875rem;font-size:.8125rem;line-height:1.8">
+          <p><strong>Customer:</strong> ${o.customer?.name || '—'}</p>
+          <p><strong>Phone:</strong> ${o.customer?.phone || '—'}</p>
+          ${o.customer?.email ? `<p><strong>Email:</strong> ${o.customer.email}</p>` : ''}
+          <p><strong>Zone:</strong> ${o.customer?.zone || '—'}</p>
+          <p><strong>Address:</strong> ${o.customer?.address || '—'}</p>
+          ${o.customer?.notes ? `<p><strong>Delivery Notes:</strong> ${o.customer.notes}</p>` : ''}
+          <p><strong>Payment:</strong> <span style="text-transform:uppercase;font-weight:600">${o.payment || '—'}</span> · ${o.payment_status === 'paid' ? '<span style="color:var(--ok)">✅ Paid</span>' : '<span style="color:#F59E0B">⚠ Unpaid</span>'}</p>
+          ${o.mpesa_ref ? `<p><strong>M-PESA Ref:</strong> ${o.mpesa_ref}</p>` : ''}
+          ${o.coupon_code ? `<p><strong>Coupon:</strong> ${o.coupon_code} (−KES ${(o.coupon_discount||0).toLocaleString()})</p>` : ''}
+          ${o.branch ? `<p><strong>Branch:</strong> ${o.branch}</p>` : ''}
+          ${o.assigned_name ? `<p><strong>Staff:</strong> ${o.assigned_name}</p>` : ''}
+        </div>
+
+        <div style="margin-bottom:.875rem">
+          <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--n-500);margin-bottom:.5rem">📦 ${(o.items||[]).length} item${(o.items||[]).length!==1?'s':''} · KES ${(o.total||0).toLocaleString()}</p>
+          <div style="border:1px solid var(--n-100);border-radius:var(--r-md);overflow:hidden">
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr style="background:var(--n-100)">
+                <th style="padding:.4rem .5rem;text-align:left;font-size:.7rem;text-transform:uppercase;color:var(--n-500)">Product</th>
+                <th style="padding:.4rem .5rem;text-align:center;font-size:.7rem;text-transform:uppercase;color:var(--n-500)">Qty</th>
+                <th style="padding:.4rem .5rem;text-align:right;font-size:.7rem;text-transform:uppercase;color:var(--n-500)">Total</th>
+              </tr></thead>
+              <tbody>${itemsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="background:var(--n-50);border-radius:var(--r-lg);padding:.875rem;margin-bottom:.875rem">
+          <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--n-500);margin-bottom:.5rem">Update Status</p>
+          <div style="display:flex;gap:.5rem">
+            <select id="odm-status-sel" style="flex:1;padding:.4rem .75rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.875rem;outline:none;background:var(--white)">
+              ${['pending','confirmed','processing','delivered','cancelled']
+                .map(s => `<option${s===o.status?' selected':''}>${s}</option>`).join('')}
+            </select>
+            <button class="admin-btn admin-btn-primary" id="odm-save-status">Save</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:.875rem">
+          <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--n-500);margin-bottom:.5rem">📝 Notes</p>
+          <div id="odm-notes-list" style="max-height:200px;overflow-y:auto;margin-bottom:.5rem">${renderOrderNotesHtml(notes)}</div>
+          <textarea id="odm-note-text" rows="2" placeholder="Add a note…"
+            style="width:100%;border:1.5px solid var(--n-200);border-radius:var(--r-md);padding:.5rem .75rem;font-size:.8125rem;font-family:inherit;resize:vertical;outline:none"></textarea>
+          <div style="display:flex;gap:.5rem;align-items:center;margin-top:.375rem">
+            <label style="display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--n-600);cursor:pointer">
+              <input type="checkbox" id="odm-note-internal"> Admin only
+            </label>
+            <button class="admin-btn admin-btn-primary btn-sm" id="odm-save-note" style="margin-left:auto">Add Note</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.625rem;flex-wrap:wrap;padding-top:.75rem;border-top:1px solid var(--n-100)">
+          ${o.payment_status !== 'paid' && o.payment === 'cod'
+            ? `<button class="admin-btn admin-btn-primary" id="odm-confirm-payment" style="background:var(--ok)">💵 Confirm Paid</button>`
+            : ''}
+          <button class="admin-btn admin-btn-primary" id="odm-print">🖨 Print Invoice</button>
+          <button class="admin-btn" id="odm-back-btn" style="background:var(--n-100);color:var(--n-700)">← Back to Orders</button>
+        </div>
+      </div>`;
+  }
+
+  function bindOrderDetailEvents(o) {
+    const back = () => switchTab('orders');
+    document.getElementById('odm-back').addEventListener('click', back);
+    document.getElementById('odm-back-btn').addEventListener('click', back);
+    document.getElementById('odm-print').addEventListener('click', () => generateInvoice(o.id));
+
+    document.getElementById('odm-confirm-payment')?.addEventListener('click', async () => {
+      try {
+        await fetch(`${Config.BASE_URL}/orders/${encodeURIComponent(o.id)}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('ibh_session')}`,
+          },
+          body: JSON.stringify({ payment_status: 'paid', status: 'delivered' }),
+        });
+        App.toast(`Order ${o.id} — payment confirmed ✅`, 'success');
+        await showOrderDetail(o.id);
+      } catch { App.toast('Failed to confirm payment', 'error'); }
+    });
+
+    document.getElementById('odm-save-status').addEventListener('click', async () => {
+      const status = document.getElementById('odm-status-sel').value;
+      await API.updateOrderStatus(o.id, status);
+      o.status = status;
+      App.toast('Status updated', 'success');
+    });
+
+    document.getElementById('odm-save-note').addEventListener('click', async () => {
+      const note = document.getElementById('odm-note-text').value.trim();
+      const internal = document.getElementById('odm-note-internal').checked;
+      if (!note) return;
+      await API.addOrderNote(o.id, note, internal);
+      const updated = await API.getOrderNotes(o.id);
+      document.getElementById('odm-notes-list').innerHTML = renderOrderNotesHtml(updated);
+      document.getElementById('odm-note-text').value = '';
+      App.toast('Note saved', 'success');
     });
   }
 
@@ -488,6 +676,7 @@ const Admin = (() => {
      USERS
   ═══════════════════════════ */
   async function buildUsers() {
+    const isAdmin = window.AdminUser?.role === 'admin';
     const users = await API.getUsers();
     const totalRevenue  = users.reduce((s, u) => s + u.totalSpent, 0);
     const totalOrders   = users.reduce((s, u) => s + u.orderCount, 0);
@@ -501,7 +690,8 @@ const Admin = (() => {
         <div class="admin-stat"><div class="admin-stat-icon">🧾</div><div class="admin-stat-num">KES ${avgOrderValue.toLocaleString()}</div><div class="admin-stat-label">Avg Order</div></div>
       </div>
 
-      <!-- Create new user -->
+      ${isAdmin ? `
+      <!-- Create new user — admin only -->
       <div class="admin-card" style="margin-bottom:1.25rem">
         <div class="admin-card-head"><h4>Create Admin / Staff User</h4></div>
         <div class="form-row">
@@ -538,6 +728,7 @@ const Admin = (() => {
         </div>
         <button class="admin-btn admin-btn-success" id="create-user-btn" style="margin-top:.75rem">+ Create User</button>
       </div>
+      ` : ''}
 
       <div class="admin-card">
         <div class="admin-card-head">
@@ -564,6 +755,7 @@ const Admin = (() => {
                   <td>${u.lastOrder || '—'}</td>
                   <td style="display:flex;gap:.375rem;flex-wrap:wrap">
                     <button class="admin-btn admin-btn-primary btn-sm" data-edit-user="${u.id}">Edit</button>
+                    ${isAdmin ? `<button class="admin-btn btn-sm" data-reset-pw="${u.id}" data-reset-pw-name="${u.name}" style="background:#FEF3C7;color:#92400E">🔑 Reset PW</button>` : ''}
                     <button class="admin-btn admin-btn-danger btn-sm"  data-del-user="${u.id}">Delete</button>
                   </td>
                 </tr>`).join('')
@@ -642,12 +834,191 @@ const Admin = (() => {
   }
 
   /* ═══════════════════════════
+     COUPONS
+  ═══════════════════════════ */
+  async function buildCoupons() {
+    const coupons = await API.getCoupons(true);
+    const fmt = c => {
+      const disc  = c.type === 'percent' ? `${c.value}% off` : `KES ${c.value} off`;
+      const min   = c.min_order > 0 ? `min KES ${c.min_order.toLocaleString()}` : 'no minimum';
+      const uses  = c.max_uses > 0 ? `${c.uses}/${c.max_uses} uses` : `${c.uses} uses`;
+      const exp   = c.expires_at ? c.expires_at : 'No expiry';
+      const badge = c.is_active
+        ? `<span class="pill pill-success" style="font-size:.6875rem">Active</span>`
+        : `<span class="pill" style="font-size:.6875rem;background:var(--n-100);color:var(--n-500)">Inactive</span>`;
+      return `<tr>
+        <td>${c.id}</td>
+        <td><strong style="font-family:monospace;letter-spacing:.05em">${c.code}</strong></td>
+        <td>${disc}</td>
+        <td>${min}</td>
+        <td>${uses}</td>
+        <td>${exp}</td>
+        <td>${badge}</td>
+        <td style="white-space:nowrap">
+          <button class="admin-btn btn-sm" data-toggle-coupon="${c.id}" data-active="${c.is_active}"
+            style="background:${c.is_active ? 'var(--n-100)' : 'var(--blue-xl)'};color:${c.is_active ? 'var(--n-600)' : 'var(--blue)'}">
+            ${c.is_active ? 'Disable' : 'Enable'}
+          </button>
+          <button class="admin-btn btn-sm admin-btn-danger" data-del-coupon="${c.id}" style="margin-left:.25rem">Delete</button>
+        </td>
+      </tr>`;
+    };
+    return `
+      <div class="admin-card" style="margin-bottom:1.25rem">
+        <div class="admin-card-head"><h4>Coupon / Promo Codes (${coupons.length})</h4></div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>#</th><th>Code</th><th>Discount</th><th>Min Order</th><th>Uses</th><th>Expires</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>${coupons.length ? coupons.map(fmt).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--n-400);padding:1.5rem">No coupons yet</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-head"><h4>Add New Coupon</h4></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem;padding:0 1rem 1rem">
+          <div class="form-group" style="margin:0">
+            <label>Code <span style="color:var(--err)">*</span></label>
+            <input id="cp-code" type="text" class="form-control" placeholder="e.g. SAVE20" style="text-transform:uppercase">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Type</label>
+            <select id="cp-type" class="form-control">
+              <option value="percent">Percent (%) off</option>
+              <option value="fixed">Fixed (KES) off</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Value <span style="color:var(--err)">*</span></label>
+            <input id="cp-value" type="number" min="0" step="0.01" class="form-control" placeholder="e.g. 10">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Min Order (KES)</label>
+            <input id="cp-min" type="number" min="0" step="1" class="form-control" placeholder="0 = none" value="0">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Max Uses</label>
+            <input id="cp-maxuses" type="number" min="0" step="1" class="form-control" placeholder="0 = unlimited" value="0">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Expires</label>
+            <input id="cp-expires" type="date" class="form-control">
+          </div>
+        </div>
+        <div style="padding:.25rem 1rem 1rem">
+          <button class="admin-btn admin-btn-primary" id="add-coupon-btn">+ Add Coupon</button>
+        </div>
+      </div>`;
+  }
+
+  /* ═══════════════════════════
+     BRANCHES
+  ═══════════════════════════ */
+  async function buildBranches() {
+    const branches = await API.getBranches();
+    const rows = branches.length
+      ? branches.map(b => `
+          <tr data-branch-id="${b.id}">
+            <td>${b.id}</td>
+            <td><strong>${b.name}</strong></td>
+            <td>${b.location || '—'}</td>
+            <td>${b.phone || '—'}</td>
+            <td style="white-space:nowrap">
+              <button class="admin-btn btn-sm" data-edit-branch="${b.id}">Edit</button>
+              <button class="admin-btn btn-sm admin-btn-danger" data-del-branch="${b.id}" style="margin-left:.25rem">Delete</button>
+            </td>
+          </tr>`)
+        .join('')
+      : `<tr><td colspan="5" style="text-align:center;color:var(--n-400);padding:1.5rem">No branches yet. Add one below.</td></tr>`;
+
+    return `
+      <div class="admin-card" style="margin-bottom:1.25rem">
+        <div class="admin-card-head"><h4>Branches (${branches.length})</h4></div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>#</th><th>Branch Name</th><th>Location</th><th>Phone</th><th>Actions</th></tr></thead>
+            <tbody id="branches-tbody">${rows}</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card-head"><h4>Add Branch</h4></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem;padding:0 1rem 1rem">
+          <div class="form-group" style="margin:0">
+            <label>Branch Name <span style="color:var(--err)">*</span></label>
+            <input id="br-name" class="form-control" placeholder="e.g. Eastleigh Branch">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Location / Address</label>
+            <input id="br-location" class="form-control" placeholder="e.g. Eastleigh, Nairobi">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Phone</label>
+            <input id="br-phone" class="form-control" type="tel" placeholder="+254 700 000 001">
+          </div>
+        </div>
+        <div style="padding:.25rem 1rem 1rem">
+          <button class="admin-btn admin-btn-primary" id="add-branch-btn">+ Add Branch</button>
+        </div>
+      </div>`;
+  }
+
+  /* ═══════════════════════════
      SETTINGS
   ═══════════════════════════ */
-  function buildSettings() {
+  async function buildSettings() {
     const heroBg   = localStorage.getItem('ibh_hero_bg')   || '';
     const heroLogo = localStorage.getItem('ibh_hero_logo') || '';
+    const s = await API.getSettings().catch(() => ({}));
+    const notifText    = s.notif_text    || '';
+    const notifActive  = s.notif_active  === '1';
+    const notifBadge   = s.notif_badge   || 'OFFER';
+    const orderEmails  = (s.order_notification_emails || '').split(',').map(e => e.trim()).filter(Boolean);
     return `
+      <div class="admin-card" style="margin-bottom:1.25rem">
+        <div class="admin-card-head"><h4>📧 Order Notification Emails</h4></div>
+        <div style="padding:.25rem 1rem .75rem">
+          <p style="font-size:.8125rem;color:var(--n-500);margin-bottom:.75rem">
+            Every address below gets an email when a new order comes in. One per line. Leave blank to fall back to
+            every Admin / Staff / Branch Manager account's email automatically.
+          </p>
+          <textarea id="order-notif-emails" rows="4" placeholder="jane@ibh.co.ke&#10;east@ibh.co.ke"
+            style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem;font-family:inherit;resize:vertical;outline:none">${orderEmails.join('\n')}</textarea>
+          <p style="font-size:.75rem;color:#92400E;background:#FEF3C7;border-radius:var(--r-md);padding:.5rem .625rem;margin-top:.625rem;line-height:1.5">
+            ⚠ Until a sending domain is verified in Resend, emails only deliver to the address that owns the Resend account
+            (currently ahmedafd180@gmail.com). Other addresses added here will be skipped until you verify a domain at
+            resend.com/domains.
+          </p>
+          <button class="admin-btn admin-btn-primary" id="save-order-notif-btn" style="margin-top:.75rem">✓ Save Recipients</button>
+        </div>
+      </div>
+
+      <div class="admin-card" style="margin-bottom:1.25rem">
+        <div class="admin-card-head"><h4>📢 Notification Bar Announcement</h4></div>
+        <div style="padding:.25rem 1rem .75rem">
+          <p style="font-size:.8125rem;color:var(--n-500);margin-bottom:.75rem">This text shows at the top of the store. Leave blank to auto-show an active coupon instead.</p>
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem">
+            <label style="display:flex;align-items:center;gap:.375rem;font-size:.875rem;font-weight:600;cursor:pointer">
+              <input type="checkbox" id="notif-active-chk" ${notifActive ? 'checked' : ''}
+                style="width:16px;height:16px;accent-color:var(--blue)">
+              Show notification bar
+            </label>
+          </div>
+          <div style="display:grid;grid-template-columns:100px 1fr;gap:.625rem;margin-bottom:.75rem">
+            <div class="form-group" style="margin:0">
+              <label>Badge Label</label>
+              <input id="notif-badge" class="form-control" value="${notifBadge}" placeholder="OFFER">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Announcement Text</label>
+              <input id="notif-text" class="form-control" value="${notifText}"
+                placeholder="e.g. Free delivery within CBD — Shop now!">
+            </div>
+          </div>
+          <button class="admin-btn admin-btn-primary" id="save-notif-btn">✓ Save Announcement</button>
+        </div>
+      </div>
+
       <div class="admin-card" style="margin-bottom:1.25rem">
         <div class="admin-card-head"><h4>Hero Section Background</h4></div>
         <div class="form-group">
@@ -663,31 +1034,6 @@ const Admin = (() => {
           <button class="admin-btn admin-btn-success" id="save-settings-btn" style="padding:.625rem 1.5rem">✓ Save Background</button>
           ${heroBg ? `<button class="admin-btn admin-btn-danger" id="clear-settings-btn" style="padding:.625rem 1.5rem">✕ Reset to Default</button>` : ''}
         </div>
-      </div>
-
-      <div class="admin-card" style="margin-bottom:1.25rem">
-        <div class="admin-card-head"><h4>Store Information</h4></div>
-        <div class="form-row">
-          <div class="form-group" style="margin:0">
-            <label>Store Name</label>
-            <input type="text" value="Inspiring Beauty Hub" placeholder="Store name">
-          </div>
-          <div class="form-group" style="margin:0">
-            <label>Notification Bar Text</label>
-            <input type="text" value="Free delivery within Nairobi CBD — Shop now!" placeholder="Announcement text">
-          </div>
-        </div>
-        <div class="form-row" style="margin-top:.625rem">
-          <div class="form-group" style="margin:0">
-            <label>WhatsApp Number</label>
-            <input type="tel" placeholder="+254700000000">
-          </div>
-          <div class="form-group" style="margin:0">
-            <label>Instagram Handle</label>
-            <input type="text" placeholder="@inspiringbeautyhub">
-          </div>
-        </div>
-        <button class="admin-btn admin-btn-success" style="margin-top:.75rem;padding:.625rem 1.5rem">✓ Save Info</button>
       </div>
 
       <div class="admin-card">
@@ -722,20 +1068,30 @@ const Admin = (() => {
       confirmed: '#065F46', pending: '#92400E',
       delivered: '#1E40AF', cancelled: '#991B1B', processing: '#3730A3',
     };
+
+    const itemsSubtotal = (o.items || []).reduce((s, i) => s + (i.price || 0) * (i.qty || 1), 0);
+    const couponDiscount = o.coupon_discount || 0;
+    const deliveryFee   = Math.max(0, (o.total || 0) - itemsSubtotal + couponDiscount);
+    const logoUrl       = window.location.origin + '/assets/images/logo.jpeg';
+
     const rows = (o.items || []).map(item => `
       <tr>
-        <td>${item.emoji || ''}  ${item.name}</td>
-        <td style="color:#666">${item.brand || ''}</td>
-        <td style="text-align:center">${item.size || '—'}</td>
-        <td style="text-align:center">${item.qty || 1}</td>
-        <td style="text-align:right">KES ${(item.price || 0).toLocaleString()}</td>
-        <td style="text-align:right;font-weight:700">KES ${((item.price || 0) * (item.qty || 1)).toLocaleString()}</td>
+        <td style="vertical-align:middle">
+          <div style="display:flex;align-items:center;gap:.625rem">
+            ${item.imageMain
+              ? `<img src="${item.imageMain}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;border:1px solid #E8ECF4" onerror="this.style.display='none'">`
+              : `<span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#F1F5FF;border-radius:6px;font-size:1.25rem;flex-shrink:0">${item.emoji || '📦'}</span>`}
+            <span>${item.name}</span>
+          </div>
+        </td>
+        <td style="color:#666;vertical-align:middle">${item.brand || ''}</td>
+        <td style="text-align:center;vertical-align:middle">${item.size || '—'}</td>
+        <td style="text-align:center;vertical-align:middle">${item.qty || 1}</td>
+        <td style="text-align:right;vertical-align:middle">KES ${(item.price || 0).toLocaleString()}</td>
+        <td style="text-align:right;font-weight:700;vertical-align:middle">KES ${((item.price || 0) * (item.qty || 1)).toLocaleString()}</td>
       </tr>`).join('');
 
-    const shipping = (o.total || 0) > 5000 ? 0 : 200;
-    const subtotal = (o.total || 0) - shipping;
-
-    const win = window.open('', '_blank', 'width=860,height=700');
+    const win = window.open('', '_blank', 'width=860,height=720');
     win.document.write(`<!DOCTYPE html><html><head>
       <meta charset="UTF-8">
       <title>Invoice — ${o.id}</title>
@@ -744,7 +1100,9 @@ const Admin = (() => {
         body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;padding:2rem;max-width:800px;margin:0 auto;font-size:14px}
         .no-print{text-align:center;margin-bottom:1.5rem}
         .print-btn{background:#1455A4;color:#fff;border:none;padding:.625rem 1.75rem;border-radius:6px;font-size:.875rem;cursor:pointer}
-        .inv-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1455A4;padding-bottom:1.25rem;margin-bottom:1.5rem}
+        .inv-header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1455A4;padding-bottom:1.25rem;margin-bottom:1.5rem}
+        .inv-logo-wrap{display:flex;align-items:center;gap:.875rem}
+        .inv-logo{width:56px;height:56px;object-fit:contain;border-radius:8px}
         .inv-brand-name{font-size:1.375rem;font-weight:800;color:#1455A4;line-height:1.1}
         .inv-tagline{font-size:.6875rem;color:#888;margin-top:2px}
         .inv-meta{text-align:right}
@@ -757,10 +1115,10 @@ const Admin = (() => {
         .inv-detail{font-size:.8125rem;color:#555;margin-top:2px}
         table{width:100%;border-collapse:collapse;margin-bottom:1.25rem}
         th{text-align:left;padding:.5rem .75rem;background:#F1F5FF;font-size:.6875rem;text-transform:uppercase;letter-spacing:.08em;color:#666}
-        td{padding:.75rem .75rem;border-bottom:1px solid #E8ECF4;font-size:.8125rem;vertical-align:middle}
+        td{padding:.625rem .75rem;border-bottom:1px solid #E8ECF4;font-size:.8125rem}
         tr:last-child td{border-bottom:none}
         .totals-wrap{display:flex;justify-content:flex-end}
-        .totals{width:260px}
+        .totals{width:280px}
         .tot-row{display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid #E8ECF4;font-size:.8125rem}
         .tot-row.grand{border-top:2px solid #1455A4;border-bottom:none;font-size:.9375rem;font-weight:800;color:#1455A4;padding-top:.5rem}
         .inv-footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #E8ECF4;text-align:center;font-size:.6875rem;color:#aaa}
@@ -771,9 +1129,12 @@ const Admin = (() => {
         <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
       </div>
       <div class="inv-header">
-        <div>
-          <div class="inv-brand-name">Inspiring Beauty Hub</div>
-          <div class="inv-tagline">Premium Fragrances &amp; Beauty · Nairobi, Kenya</div>
+        <div class="inv-logo-wrap">
+          <img src="${logoUrl}" alt="IBH" class="inv-logo" onerror="this.style.display='none'">
+          <div>
+            <div class="inv-brand-name">Inspiring Beauty Hub</div>
+            <div class="inv-tagline">Premium Fragrances &amp; Beauty · Nairobi, Kenya</div>
+          </div>
         </div>
         <div class="inv-meta">
           <div class="inv-id">INVOICE ${o.id}</div>
@@ -785,25 +1146,36 @@ const Admin = (() => {
         <div>
           <div class="inv-label">From</div>
           <div class="inv-name">Inspiring Beauty Hub</div>
-          <div class="inv-detail">info@ibh.co.ke</div>
-          <div class="inv-detail">+254 700 000 000</div>
+          <div class="inv-detail">inspiringbeautyhub@gmail.com</div>
+          <div class="inv-detail">+254 758 284 018</div>
+          ${o.branch ? `<div class="inv-detail">Branch: ${o.branch}</div>` : ''}
         </div>
         <div>
           <div class="inv-label">Bill To</div>
           <div class="inv-name">${o.customer?.name || o.customer || 'Customer'}</div>
           ${o.customer?.phone ? `<div class="inv-detail">${o.customer.phone}</div>` : ''}
           ${o.customer?.email ? `<div class="inv-detail">${o.customer.email}</div>` : ''}
+          ${o.customer?.zone ? `<div class="inv-detail">Zone: ${o.customer.zone}</div>` : ''}
+          ${o.customer?.address ? `<div class="inv-detail">${o.customer.address}</div>` : ''}
         </div>
       </div>
       <table>
-        <thead><tr><th>Product</th><th>Brand</th><th>Size</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Subtotal</th></tr></thead>
+        <thead><tr>
+          <th style="min-width:200px">Product</th>
+          <th>Brand</th>
+          <th>Size</th>
+          <th style="text-align:center">Qty</th>
+          <th style="text-align:right">Unit Price</th>
+          <th style="text-align:right">Subtotal</th>
+        </tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="totals-wrap">
         <div class="totals">
-          <div class="tot-row"><span>Subtotal</span><span>KES ${subtotal.toLocaleString()}</span></div>
-          <div class="tot-row"><span>Delivery</span><span>${shipping ? `KES ${shipping}` : 'Free'}</span></div>
-          <div class="tot-row"><span>Payment</span><span style="text-transform:uppercase;font-size:.6875rem;font-weight:600">${o.payment || '—'}</span></div>
+          <div class="tot-row"><span>Items Subtotal</span><span>KES ${itemsSubtotal.toLocaleString()}</span></div>
+          ${couponDiscount > 0 ? `<div class="tot-row" style="color:#16A34A"><span>Coupon${o.coupon_code ? ' ('+o.coupon_code+')' : ''}</span><span>−KES ${couponDiscount.toLocaleString()}</span></div>` : ''}
+          <div class="tot-row"><span>Delivery</span><span>${deliveryFee > 0 ? `KES ${deliveryFee.toLocaleString()}` : '<span style="color:#16A34A">Free</span>'}</span></div>
+          <div class="tot-row"><span>Payment Method</span><span style="text-transform:uppercase;font-size:.6875rem;font-weight:600">${o.payment || '—'}</span></div>
           <div class="tot-row grand"><span>Total</span><span>KES ${(o.total || 0).toLocaleString()}</span></div>
         </div>
       </div>
@@ -837,6 +1209,56 @@ const Admin = (() => {
     overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(); });
     document.getElementById('admin-confirm-cancel').addEventListener('click', cleanup);
     document.getElementById('admin-confirm-ok').addEventListener('click', () => { cleanup(); onConfirm(); });
+  }
+
+  /* ═══════════════════════════
+     RESET PASSWORD MODAL
+  ═══════════════════════════ */
+  function _randomPassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  }
+
+  function showResetPasswordModal(id, name) {
+    document.getElementById('reset-pw-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'reset-pw-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)';
+    overlay.innerHTML = `
+      <div style="background:var(--white);border-radius:var(--r-xl);max-width:380px;width:100%;padding:1.75rem;box-shadow:var(--sh-xl)">
+        <h3 style="font-size:1rem;font-weight:700;color:var(--n-900);margin-bottom:.25rem">Reset Password</h3>
+        <p style="font-size:.8125rem;color:var(--n-500);margin-bottom:1rem">Set a new password for <strong>${name}</strong>. Share it with them securely — this does not send an email.</p>
+        <div class="form-group" style="margin:0">
+          <label>New Password</label>
+          <div style="display:flex;gap:.375rem">
+            <input id="rpw-input" type="text" value="${_randomPassword()}" minlength="6"
+              style="flex:1;padding:.5rem .625rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.875rem;outline:none;font-family:monospace">
+            <button id="rpw-generate" class="admin-btn" title="Generate new random password" style="padding:.5rem .625rem">🎲</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.25rem">
+          <button id="rpw-cancel" class="admin-btn" style="padding:.5rem 1.25rem;background:var(--n-100);color:var(--n-700);font-weight:600">Cancel</button>
+          <button id="rpw-save" class="admin-btn admin-btn-success" style="padding:.5rem 1.25rem;font-weight:600">Reset Password</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const cleanup = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(); });
+    document.getElementById('rpw-cancel').addEventListener('click', cleanup);
+    document.getElementById('rpw-generate').addEventListener('click', () => {
+      document.getElementById('rpw-input').value = _randomPassword();
+    });
+    document.getElementById('rpw-save').addEventListener('click', async () => {
+      const password = document.getElementById('rpw-input').value.trim();
+      if (password.length < 6) { App.toast('Password must be at least 6 characters', 'error'); return; }
+      try {
+        await API.resetUserPassword(id, password);
+        cleanup();
+        App.toast(`Password reset for ${name}`, 'success');
+      } catch {
+        App.toast('Failed to reset password', 'error');
+      }
+    });
   }
 
   /* ═══════════════════════════
@@ -893,7 +1315,7 @@ const Admin = (() => {
         _orderStatus = statusIn?.value || '';
         _orderDate   = dateIn?.value   || '';
         const allOrders = await API.getOrders();
-        document.getElementById('orders-tbody').innerHTML = buildOrdersRows(applyOrderFilters(allOrders));
+        document.getElementById('orders-tbody').innerHTML = buildOrdersRows(applyOrderFilters(allOrders), _cachedStaff, _cachedBranches);
         bindOrderTableEvents();
       };
 
@@ -1314,6 +1736,13 @@ const Admin = (() => {
         });
       });
 
+      /* Reset password */
+      c.querySelectorAll('[data-reset-pw]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          showResetPasswordModal(btn.dataset.resetPw, btn.dataset.resetPwName);
+        });
+      });
+
       /* Delete user */
       c.querySelectorAll('[data-del-user]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1419,26 +1848,165 @@ const Admin = (() => {
       });
     }
 
+    /* ── Coupons ── */
+    if (tab === 'coupons') {
+      document.getElementById('cp-code')?.addEventListener('input', e => {
+        e.target.value = e.target.value.toUpperCase().replace(/\s/g, '');
+      });
+
+      document.getElementById('add-coupon-btn')?.addEventListener('click', async () => {
+        const code    = document.getElementById('cp-code')?.value.trim().toUpperCase();
+        const type    = document.getElementById('cp-type')?.value || 'percent';
+        const value   = document.getElementById('cp-value')?.value;
+        const min     = document.getElementById('cp-min')?.value || '0';
+        const maxU    = document.getElementById('cp-maxuses')?.value || '0';
+        const expires = document.getElementById('cp-expires')?.value || null;
+        if (!code)  { App.toast('Enter a coupon code', 'error');    return; }
+        if (!value) { App.toast('Enter a discount value', 'error'); return; }
+        try {
+          await API.addCoupon({ code, type, value: Number(value), min_order: Number(min), max_uses: Number(maxU), expires_at: expires });
+          App.toast(`Coupon "${code}" created`, 'success');
+          switchTab('coupons');
+        } catch (e) { App.toast(e.message || 'Code already exists', 'error'); }
+      });
+
+      c.querySelectorAll('[data-toggle-coupon]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id     = btn.dataset.toggleCoupon;
+          const active = btn.dataset.active === '1';
+          await API.updateCoupon(id, { is_active: active ? 0 : 1 });
+          App.toast(active ? 'Coupon disabled' : 'Coupon enabled', 'success');
+          switchTab('coupons');
+        });
+      });
+
+      c.querySelectorAll('[data-del-coupon]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.delCoupon;
+          _showConfirm({
+            title: 'Delete Coupon?',
+            body: 'This coupon will be permanently removed.',
+            confirmLabel: 'Yes, Delete',
+            onConfirm: async () => {
+              await API.deleteCoupon(id);
+              App.toast('Coupon deleted');
+              switchTab('coupons');
+            },
+          });
+        });
+      });
+    }
+
+    /* ── Branches ── */
+    if (tab === 'branches') {
+      document.getElementById('add-branch-btn')?.addEventListener('click', async () => {
+        const name     = document.getElementById('br-name')?.value.trim();
+        const location = document.getElementById('br-location')?.value.trim() || '';
+        const phone    = document.getElementById('br-phone')?.value.trim() || '';
+        if (!name) { App.toast('Enter a branch name', 'error'); return; }
+        try {
+          await API.addBranch({ name, location, phone });
+          App.toast(`Branch "${name}" added`, 'success');
+          switchTab('branches');
+        } catch (e) { App.toast(e.message || 'Branch already exists', 'error'); }
+      });
+
+      c.querySelectorAll('[data-edit-branch]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id  = btn.dataset.editBranch;
+          const row = btn.closest('tr');
+          if (!row) return;
+          const name     = row.querySelector('td:nth-child(2)')?.textContent.trim() || '';
+          const location = row.querySelector('td:nth-child(3)')?.textContent.replace('—','').trim() || '';
+          const phone    = row.querySelector('td:nth-child(4)')?.textContent.replace('—','').trim() || '';
+          row.innerHTML = `
+            <td colspan="5">
+              <div style="display:flex;gap:.625rem;flex-wrap:wrap;align-items:flex-end;padding:.375rem 0">
+                <div class="form-group" style="margin:0;min-width:160px">
+                  <label>Name</label>
+                  <input class="br-edit-name" value="${name}" style="width:100%;padding:.4rem .625rem;border:1.5px solid var(--blue);border-radius:var(--r-md);font-size:.8125rem;outline:none">
+                </div>
+                <div class="form-group" style="margin:0;min-width:160px">
+                  <label>Location</label>
+                  <input class="br-edit-loc" value="${location}" style="width:100%;padding:.4rem .625rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem;outline:none">
+                </div>
+                <div class="form-group" style="margin:0;min-width:140px">
+                  <label>Phone</label>
+                  <input class="br-edit-phone" value="${phone}" style="width:100%;padding:.4rem .625rem;border:1.5px solid var(--n-200);border-radius:var(--r-md);font-size:.8125rem;outline:none">
+                </div>
+                <div style="display:flex;gap:.375rem">
+                  <button class="admin-btn admin-btn-success btn-sm br-save-btn">✓ Save</button>
+                  <button class="admin-btn btn-sm br-cancel-btn">Cancel</button>
+                </div>
+              </div>
+            </td>`;
+          row.querySelector('.br-save-btn').addEventListener('click', async () => {
+            await API.updateBranch(id, {
+              name:     row.querySelector('.br-edit-name').value.trim(),
+              location: row.querySelector('.br-edit-loc').value.trim(),
+              phone:    row.querySelector('.br-edit-phone').value.trim(),
+            });
+            App.toast('Branch updated', 'success');
+            switchTab('branches');
+          });
+          row.querySelector('.br-cancel-btn').addEventListener('click', () => switchTab('branches'));
+        });
+      });
+
+      c.querySelectorAll('[data-del-branch]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id   = btn.dataset.delBranch;
+          const name = btn.closest('tr')?.querySelector('td:nth-child(2)')?.textContent.trim() || id;
+          _showConfirm({
+            title: 'Delete Branch?',
+            body: `Remove <strong>"${name}"</strong>? This will not delete the staff assigned to it.`,
+            confirmLabel: 'Yes, Delete',
+            onConfirm: async () => {
+              await API.deleteBranch(id);
+              App.toast('Branch deleted');
+              switchTab('branches');
+            },
+          });
+        });
+      });
+    }
+
     /* ── Settings ── */
     if (tab === 'settings') {
       setupImageInput('hero-bg-url', 'hero-bg-file', 'hero-bg-preview');
-      setupImageInput('hero-logo-url', 'hero-logo-file', 'hero-logo-preview');
 
-      document.getElementById('save-settings-btn')?.addEventListener('click', () => {
-        const url  = document.getElementById('hero-bg-url').value.trim();
-        const logo = document.getElementById('hero-logo-url')?.value.trim();
-        if (url) localStorage.setItem('ibh_hero_bg', url);
-        if (logo) localStorage.setItem('ibh_hero_logo', logo);
+      document.getElementById('save-order-notif-btn')?.addEventListener('click', async () => {
+        const emails = document.getElementById('order-notif-emails')?.value
+          .split('\n').map(e => e.trim()).filter(Boolean);
+        await API.saveSettings({ order_notification_emails: emails.join(',') });
+        App.toast('Order notification recipients saved', 'success');
+      });
+
+      document.getElementById('save-notif-btn')?.addEventListener('click', async () => {
+        const text   = document.getElementById('notif-text')?.value.trim() || '';
+        const active = document.getElementById('notif-active-chk')?.checked ? '1' : '0';
+        const badge  = document.getElementById('notif-badge')?.value.trim() || 'OFFER';
+        await API.saveSettings({ notif_text: text, notif_active: active, notif_badge: badge });
+        App.toast('Announcement saved', 'success');
+        if (typeof App !== 'undefined' && App._reloadNotif) App._reloadNotif();
+      });
+
+      document.getElementById('save-settings-btn')?.addEventListener('click', async () => {
+        const url = document.getElementById('hero-bg-url').value.trim();
+        if (url) {
+          localStorage.setItem('ibh_hero_bg', url);
+          await API.saveSettings({ hero_bg: url }).catch(() => {});
+        }
         App.applyHeroBg();
-        App.toast('Settings saved', 'success');
+        App.toast('Background saved — will appear on the home page', 'success');
         switchTab('settings');
       });
 
-      document.getElementById('clear-settings-btn')?.addEventListener('click', () => {
+      document.getElementById('clear-settings-btn')?.addEventListener('click', async () => {
         localStorage.removeItem('ibh_hero_bg');
-        localStorage.removeItem('ibh_hero_logo');
+        await API.saveSettings({ hero_bg: '' }).catch(() => {});
         App.applyHeroBg();
-        App.toast('Background removed');
+        App.toast('Background removed — default video restored');
         switchTab('settings');
       });
 
@@ -1470,70 +2038,131 @@ const Admin = (() => {
         try {
           await fetch(`${Config.BASE_URL}/orders/${encodeURIComponent(id)}`, {
             method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('ibh_session')}`,
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ibh_session')}` },
             body: JSON.stringify({ branch }),
           });
           App.toast('Branch assigned', 'success');
         } catch { App.toast('Failed to assign branch', 'error'); }
       });
     });
-    c?.querySelectorAll('[data-invoice]').forEach(btn => {
-      btn.addEventListener('click', () => generateInvoice(btn.dataset.invoice));
+
+    /* Staff assignment */
+    c?.querySelectorAll('.staff-assign-select[data-assign-order-id]').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const id          = sel.dataset.assignOrderId;
+        const assigned_to = sel.value ? Number(sel.value) : null;
+        const opt         = sel.options[sel.selectedIndex];
+        const name        = assigned_to ? (opt.dataset.name || opt.text) : null;
+        try {
+          await fetch(`${Config.BASE_URL}/orders/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ibh_session')}` },
+            body: JSON.stringify({ assigned_to, assigned_name: name }),
+          });
+          App.toast(assigned_to ? `Assigned to ${name}` : 'Assignment cleared', 'success');
+        } catch { App.toast('Failed to assign staff', 'error'); }
+      });
     });
-    c?.querySelectorAll('[data-view-order]').forEach(btn => {
+
+    /* Notes modal */
+    c?.querySelectorAll('[data-notes-order]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const orders = await API.getOrders();
-        const o = orders.find(x => x.id === btn.dataset.viewOrder);
-        if (!o) return;
-        const existing = document.getElementById('order-detail-modal');
+        const id    = btn.dataset.notesOrder;
+        const notes = await API.getOrderNotes(id);
+        const existing = document.getElementById('notes-modal');
         if (existing) existing.remove();
         const modal = document.createElement('div');
-        modal.id = 'order-detail-modal';
+        modal.id = 'notes-modal';
         modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(3px)';
+        const renderNotes = (list) => list.length
+          ? list.map(n => `
+              <div style="padding:.75rem;background:${n.is_internal ? '#FEF9C3' : 'var(--n-50)'};border-radius:var(--r-md);border:1px solid ${n.is_internal ? '#F59E0B' : 'var(--n-200)'};margin-bottom:.5rem">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem">
+                  <strong style="font-size:.8125rem;color:var(--blue-d)">${n.author_name}</strong>
+                  <div style="display:flex;gap:.375rem;align-items:center">
+                    ${n.is_internal ? `<span style="font-size:.625rem;background:#F59E0B;color:#fff;padding:.1rem .4rem;border-radius:999px">Admin Only</span>` : ''}
+                    <span style="font-size:.6875rem;color:var(--n-400)">${n.created_at?.slice(0,16).replace('T',' ') || ''}</span>
+                  </div>
+                </div>
+                <p style="font-size:.8125rem;color:var(--n-700);margin:0">${n.note}</p>
+              </div>`)
+            .join('')
+          : `<p style="color:var(--n-400);font-size:.8125rem;text-align:center;padding:1rem">No notes yet</p>`;
+
         modal.innerHTML = `
-          <div style="background:var(--white);border-radius:var(--r-xl);max-width:520px;width:100%;padding:1.5rem;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-xl)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
-              <h3 style="font-size:1rem;font-weight:700;color:var(--blue-d)">Order ${o.id}</h3>
-              <button onclick="document.getElementById('order-detail-modal').remove()"
-                style="background:var(--n-100);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1.125rem">×</button>
+          <div style="background:var(--white);border-radius:var(--r-xl);max-width:520px;width:100%;padding:1.5rem;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--sh-xl)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+              <h3 style="font-size:1rem;font-weight:700;color:var(--blue-d)">📝 Notes — ${id}</h3>
+              <button id="notes-modal-close" style="background:var(--n-100);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1.125rem">×</button>
             </div>
-            <div style="background:var(--n-50);border-radius:var(--r-lg);padding:1rem;margin-bottom:1rem;font-size:.8125rem">
-              <p><strong>Customer:</strong> ${o.customer?.name || '—'}</p>
-              <p><strong>Phone:</strong> ${o.customer?.phone || '—'}</p>
-              ${o.customer?.email ? `<p><strong>Email:</strong> ${o.customer.email}</p>` : ''}
-              <p><strong>Delivery Zone:</strong> ${o.customer?.zone || '—'}</p>
-              <p><strong>Address:</strong> ${o.customer?.address || '—'}</p>
-              ${o.customer?.notes ? `<p><strong>Notes:</strong> ${o.customer.notes}</p>` : ''}
-            </div>
-            <table style="width:100%;border-collapse:collapse;font-size:.8125rem;margin-bottom:1rem">
-              <thead><tr style="background:var(--n-100)">
-                <th style="padding:.5rem;text-align:left">Product</th>
-                <th style="padding:.5rem;text-align:center">Qty</th>
-                <th style="padding:.5rem;text-align:right">Price</th>
-              </tr></thead>
-              <tbody>
-                ${(o.items || []).map(item => `
-                  <tr>
-                    <td style="padding:.5rem .5rem;border-bottom:1px solid var(--n-100)">${item.emoji || ''} ${item.name}</td>
-                    <td style="padding:.5rem;text-align:center;border-bottom:1px solid var(--n-100)">${item.qty}</td>
-                    <td style="padding:.5rem;text-align:right;border-bottom:1px solid var(--n-100)">KES ${((item.price||0)*(item.qty||1)).toLocaleString()}</td>
-                  </tr>`).join('')}
-                <tr>
-                  <td colspan="2" style="padding:.5rem;font-weight:700;color:var(--blue-d)">Total</td>
-                  <td style="padding:.5rem;text-align:right;font-weight:700;color:var(--blue-d)">KES ${(o.total||0).toLocaleString()}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div style="display:flex;gap:.625rem;flex-wrap:wrap">
-              <button class="admin-btn admin-btn-primary" onclick="Admin._printInvoice('${o.id}');document.getElementById('order-detail-modal').remove()">🖨 Print Invoice</button>
-              <button class="admin-btn" onclick="document.getElementById('order-detail-modal').remove()" style="background:var(--n-100);color:var(--n-700)">Close</button>
+            <div id="notes-list" style="flex:1;overflow-y:auto;max-height:340px;margin-bottom:1rem">${renderNotes(notes)}</div>
+            <div style="border-top:1px solid var(--n-200);padding-top:.875rem">
+              <textarea id="new-note-text" rows="3" placeholder="Add a note…"
+                style="width:100%;border:1.5px solid var(--n-200);border-radius:var(--r-md);padding:.5rem .75rem;font-size:.8125rem;font-family:inherit;resize:vertical;outline:none"></textarea>
+              <div style="display:flex;gap:.5rem;align-items:center;margin-top:.5rem">
+                <label style="display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--n-600);cursor:pointer">
+                  <input type="checkbox" id="note-internal"> Admin only
+                </label>
+                <button class="admin-btn admin-btn-primary" id="save-note-btn" style="margin-left:auto">Add Note</button>
+              </div>
             </div>
           </div>`;
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        document.getElementById('notes-modal-close').addEventListener('click', () => modal.remove());
+        document.getElementById('save-note-btn').addEventListener('click', async () => {
+          const note = document.getElementById('new-note-text').value.trim();
+          const internal = document.getElementById('note-internal').checked;
+          if (!note) return;
+          await API.addOrderNote(id, note, internal);
+          const updated = await API.getOrderNotes(id);
+          document.getElementById('notes-list').innerHTML = renderNotes(updated);
+          document.getElementById('new-note-text').value = '';
+          App.toast('Note saved', 'success');
+        });
+      });
+    });
+    c?.querySelectorAll('[data-invoice]').forEach(btn => {
+      btn.addEventListener('click', () => generateInvoice(btn.dataset.invoice));
+    });
+    c?.querySelectorAll('[data-view-order]').forEach(btn => {
+      btn.addEventListener('click', () => showOrderDetail(btn.dataset.viewOrder));
+    });
+
+    /* More-actions (⋮) menu — delete order */
+    const closeAllOrderMenus = () => document.querySelectorAll('[data-order-menu]').forEach(m => m.style.display = 'none');
+    c?.querySelectorAll('[data-order-menu-toggle]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const menu = c.querySelector(`[data-order-menu="${btn.dataset.orderMenuToggle}"]`);
+        const wasOpen = menu.style.display === 'block';
+        closeAllOrderMenus();
+        menu.style.display = wasOpen ? 'none' : 'block';
+      });
+    });
+    if (!_orderMenuOutsideClickBound) {
+      document.addEventListener('click', closeAllOrderMenus);
+      _orderMenuOutsideClickBound = true;
+    }
+
+    c?.querySelectorAll('[data-delete-order]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.deleteOrder;
+        closeAllOrderMenus();
+        _showConfirm({
+          title: 'Delete Order?',
+          body: `Order ${id} will be permanently removed. This cannot be undone.`,
+          confirmLabel: 'Yes, Delete',
+          onConfirm: async () => {
+            try {
+              await API.deleteOrder(id);
+              App.toast('Order deleted');
+              switchTab('orders');
+            } catch {
+              App.toast('Failed to delete order', 'error');
+            }
+          },
+        });
       });
     });
   }

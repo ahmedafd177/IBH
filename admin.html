@@ -411,6 +411,14 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         Delivery Areas
       </button>
+      <button class="admin-tab" data-tab="branches" role="tab">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Branches
+      </button>
+      <button class="admin-tab" data-tab="coupons" role="tab">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Coupons
+      </button>
       <button class="admin-tab" data-tab="settings" role="tab">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Settings
@@ -572,10 +580,16 @@ const AdminGate = (() => {
     /* Hide login gate */
     document.getElementById('admin-login-screen').style.display = 'none';
 
-    /* Restrict sidebar for branch_manager */
-    if (user.role === 'branch_manager') {
+    /* Restrict sidebar tabs by role */
+    const STAFF_TABS   = new Set(['orders', 'products', 'add-product', 'brands', 'categories']);
+    const MANAGER_TABS = new Set(['orders']);
+    if (user.role === 'staff') {
       document.querySelectorAll('.admin-tab').forEach(tab => {
-        if (tab.dataset.tab !== 'orders') tab.style.display = 'none';
+        if (!STAFF_TABS.has(tab.dataset.tab)) tab.style.display = 'none';
+      });
+    } else if (user.role === 'branch_manager') {
+      document.querySelectorAll('.admin-tab').forEach(tab => {
+        if (!MANAGER_TABS.has(tab.dataset.tab)) tab.style.display = 'none';
       });
     }
 

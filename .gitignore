@@ -13,6 +13,9 @@ build/
 .vscode/
 .idea/
 
+# Vercel
+.vercel/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -25,8 +28,11 @@ npm-debug.log*
 *.tmp
 *.swp
 
-# SQLite database
+# SQLite database (main file + WAL/SHM auxiliary files, which can contain
+# raw, uncheckpointed page data — customer info, password hashes, etc.)
 database/*.sqlite
+database/*.sqlite-shm
+database/*.sqlite-wal
 
 # Uploaded files
 assets/uploads/*

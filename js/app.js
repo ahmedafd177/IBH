@@ -14,14 +14,20 @@ const App = (() => {
 
   async function _dispatchRoute() {
     const p = window.location.pathname.replace(/\/$/, '') || '/';
-    if      (p === '/brands')   await showBrands();
-    else if (p === '/wishlist') await showWishlistPage();
-    else if (p === '/about')    showAbout();
-    else if (p === '/perfume')  await showShop({ cat: 'perfume' }, 'Perfumes',  'Perfume');
-    else if (p === '/hair')     await showShop({ cat: 'hair' },    'Hair Care', 'Hair Care');
-    else if (p === '/body')     await showShop({ cat: 'body' },    'Body Care', 'Body Care');
-    else if (p === '/shop')     await showShop({}, 'All Products', 'Shop');
-    else                        showHome();
+    if      (p === '/brands')        await showBrands();
+    else if (p === '/wishlist')      await showWishlistPage();
+    else if (p === '/about')         showAbout();
+    else if (p === '/terms')         showTerms();
+    else if (p === '/perfume')       await showShop({ cat: 'perfume' }, 'Perfumes',  'Perfume');
+    else if (p === '/hair')          await showShop({ cat: 'hair' },    'Hair Care', 'Hair Care');
+    else if (p === '/body')          await showShop({ cat: 'body' },    'Body Care', 'Body Care');
+    else if (p === '/shop')          await showShop({}, 'All Products', 'Shop');
+    else if (p.startsWith('/product/')) {
+      const pid = parseInt(p.split('/')[2], 10);
+      if (pid) await showProductDetail(pid);
+      else showHome();
+    }
+    else showHome();
   }
 
   /* ── Toast ── */
@@ -43,7 +49,7 @@ const App = (() => {
   const HOME_SECTIONS = ['new-arrivals', 'trending', 'most-sell', 'why-ibh', 'brands-section', 'hero'];
 
   function _hideAll() {
-    [...HOME_SECTIONS, 'shop', 'brands-page', 'wishlist-page', 'about-page'].forEach(id => {
+    [...HOME_SECTIONS, 'shop', 'brands-page', 'wishlist-page', 'about-page', 'terms-page', 'product-detail'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.hidden = true;
     });
@@ -57,7 +63,6 @@ const App = (() => {
     await Products.renderGrid(document.getElementById('new-arrivals-grid'), { isNew: true }, 8);
     await renderTrending('all');
     await renderMostSell('all');
-    populateBrandsTicker();
     populateBrandsShowcase();
     await populateNavBrands();
     await populateNavCategories();
@@ -88,8 +93,154 @@ const App = (() => {
     document.getElementById('shop-label').textContent = eyebrow;
     _shopVisible = true;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    _populateShopSidebar(filters);
     const count = await Products.renderGrid(document.getElementById('shop-grid'), filters);
     document.getElementById('shop-empty').hidden = count > 0;
+  }
+
+  async function _populateShopSidebar(activeFilters) {
+    const sidebar = document.getElementById('shop-sidebar');
+    if (!sidebar) return;
+    const inner = sidebar.querySelector('.shop-sidebar-inner');
+    if (!inner) return;
+    const [brands, cats] = await Promise.all([
+      API.getBrandsAsync().catch(() => []),
+      API.getCategoriesAsync().catch(() => []),
+    ]);
+    const activeBrand = activeFilters?.brand || '';
+    const activeCat   = activeFilters?.cat   || '';
+    const catLabels = { perfume: 'Perfume', hair: 'Hair Care', body: 'Body Care' };
+    const catsHtml = ['perfume', 'hair', 'body'].map(c => `
+      <a href="#" class="sidebar-filter-item${activeCat === c ? ' active' : ''}" data-sidebar-cat="${c}">
+        ${catLabels[c]}
+      </a>`).join('');
+    const brandsHtml = brands.map(b => {
+      const letter = (b.name || '?')[0].toUpperCase();
+      const avatar = b.image
+        ? `<img src="${b.image}" alt="${b.name}" class="sidebar-brand-avatar">`
+        : `<span class="sidebar-brand-letter">${letter}</span>`;
+      return `<a href="#" class="sidebar-filter-item sidebar-brand-item${activeBrand === b.name ? ' active' : ''}" data-sidebar-brand="${b.name}">
+        <span class="sidebar-brand-icon">${avatar}</span>${b.name}
+      </a>`;
+    }).join('');
+    inner.innerHTML = `
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Categories</div>
+        <a href="#" class="sidebar-filter-item${!activeCat ? ' active' : ''}" data-sidebar-cat="">All</a>
+        ${catsHtml}
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Brands</div>
+        ${brandsHtml || '<p class="sidebar-empty">No brands found</p>'}
+      </div>`;
+  }
+
+  /* ── Product Detail Page ── */
+  async function showProductDetail(id) {
+    _setUrl(`/product/${id}`);
+    _hideAll();
+    const section = document.getElementById('product-detail');
+    if (!section) return;
+    section.hidden = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const body = document.getElementById('pdp-body');
+    body.innerHTML = `<p style="text-align:center;padding:3rem;color:var(--n-400)">Loading…</p>`;
+
+    const p = await API.getProduct(id);
+    if (!p) { body.innerHTML = `<p style="text-align:center;padding:3rem">Product not found.</p>`; return; }
+
+    const wish  = API.getWishlist();
+    const loved = wish.includes(p.id);
+    const disc  = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+    const allImgs = [p.imageMain, p.imageAlt1, p.imageAlt2].filter(Boolean);
+    const galleryHtml = allImgs.length > 1 ? `
+      <div class="pdp-gallery">
+        ${allImgs.map((src, i) => `<img src="${src}" alt="${p.name}" class="pdp-gallery-thumb${i === 0 ? ' active' : ''}" loading="lazy">`).join('')}
+      </div>` : '';
+    const imgAreaHtml = p.imageMain
+      ? `<div class="pdp-img-wrap">
+          <img src="${p.imageMain}" alt="${p.name}" class="pdp-img-main" id="pdp-main-img" loading="lazy">
+          ${galleryHtml}
+         </div>`
+      : `<div class="pdp-img-emoji" aria-hidden="true">${p.emoji}</div>`;
+
+    body.innerHTML = `
+      <div class="pdp-grid">
+        ${imgAreaHtml}
+        <div class="pdp-info">
+          <div class="pd-brand">${p.brand}</div>
+          <h1 class="pdp-name" id="pdp-h">${p.name}</h1>
+          ${(p.isHot || p.isOnSale) ? `<div style="display:flex;gap:.375rem;flex-wrap:wrap;margin-bottom:.625rem">
+            ${p.isHot    ? `<span class="badge badge-hot">🔥 Hot</span>`   : ''}
+            ${p.isOnSale ? `<span class="badge badge-sale">On Sale</span>` : ''}
+          </div>` : ''}
+          <div class="pd-stars" aria-label="${p.rating} stars">
+            ${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5 - Math.round(p.rating))}
+            <span style="font-size:.75rem;color:var(--n-400);font-family:var(--f-body)"> ${p.rating} · ${p.stock} in stock</span>
+          </div>
+          <div class="pd-price" style="font-size:1.75rem;margin:.75rem 0 .25rem">
+            KES ${p.price.toLocaleString()}
+            ${disc ? `<span class="pd-disc">${disc}% OFF</span>` : ''}
+          </div>
+          ${p.oldPrice ? `<div class="pd-old">Was KES ${p.oldPrice.toLocaleString()}</div>` : ''}
+          <p class="pd-desc" id="pdp-desc" style="margin:.875rem 0">${p.desc || ''}</p>
+          <div class="pd-info" style="margin:.75rem 0">
+            <span>Category: <strong>${p.subcat}</strong></span>
+            <span>Gender: <strong>${p.gender}</strong></span>
+          </div>
+          <span class="pd-var-label">Size</span>
+          <div class="pd-var-btns" id="pdp-sizes">
+            ${p.sizes.map((s, i) => `<button class="pd-var-btn${i === 0 ? ' active' : ''}"
+              onclick="this.closest('#pdp-sizes').querySelectorAll('.pd-var-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${s}</button>`).join('')}
+          </div>
+          <div class="pd-actions" style="margin-top:1.25rem">
+            <button class="pd-buy-now" data-buy-id="${p.id}">⚡ Buy Now</button>
+            <button class="pd-add" data-add-id="${p.id}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              Add to Cart
+            </button>
+            <button class="pd-wish-btn" data-wish-id="${p.id}" title="Wishlist" aria-label="Add to wishlist">
+              ${loved ? '❤️' : '🤍'}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="pdp-recs-wrap" style="margin-top:2.5rem;padding-top:2rem;border-top:1.5px solid var(--n-100)">
+        <p style="font-size:.875rem;font-weight:700;color:var(--n-800);margin:0 0 1rem">You Might Also Like</p>
+        <div id="pdp-recs" class="products-grid"></div>
+      </div>
+      <div id="pdp-reviews-wrap" style="margin-top:2.5rem;padding-top:2rem;border-top:1.5px solid var(--n-100)">
+        <p style="font-size:.75rem;color:var(--n-400);text-align:center">Loading reviews…</p>
+      </div>`;
+
+    /* Gallery thumb swap */
+    section.querySelectorAll('.pdp-gallery-thumb').forEach(thumb => {
+      thumb.addEventListener('click', () => {
+        const main = document.getElementById('pdp-main-img');
+        if (main) {
+          main.src = thumb.src;
+          section.querySelectorAll('.pdp-gallery-thumb').forEach(t => t.classList.remove('active'));
+          thumb.classList.add('active');
+        }
+      });
+    });
+
+    /* Recommended products */
+    API.getProducts({ cat: p.cat }).then(all => {
+      const similar = all.filter(x => x.id !== p.id && x.isVisible !== false).slice(0, 8);
+      const recsEl = document.getElementById('pdp-recs');
+      const recsWrap = document.getElementById('pdp-recs-wrap');
+      if (!recsEl || !similar.length) { recsWrap?.remove(); return; }
+      const w = API.getWishlist();
+      recsEl.innerHTML = similar.map(sp => Products.card(sp, w)).join('');
+    }).catch(() => document.getElementById('pdp-recs-wrap')?.remove());
+
+    /* Reviews */
+    const reviewsWrap = document.getElementById('pdp-reviews-wrap');
+    if (reviewsWrap) {
+      const user = (typeof Auth !== 'undefined') ? Auth.currentUser() : null;
+      Products._loadAndRenderReviews(p.id, reviewsWrap, user);
+    }
   }
 
   function showHome() {
@@ -111,14 +262,13 @@ const App = (() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  /* ── Populate Brands ticker (dynamic from API) ── */
-  async function populateBrandsTicker() {
-    const ticker = document.querySelector('.brands-ticker');
-    if (!ticker) return;
-    const brands = await API.getBrandsAsync();
-    if (!brands.length) return;
-    const spans = brands.map(b => `<span>${b.name}</span>`).join('');
-    ticker.innerHTML = spans + spans; // doubled for seamless infinite-scroll loop
+  /* ── Terms & Conditions page ── */
+  function showTerms() {
+    _setUrl('/terms');
+    _hideAll();
+    const termsPage = document.getElementById('terms-page');
+    if (termsPage) termsPage.hidden = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   /* ── Brands showcase grid on homepage ── */
@@ -167,21 +317,46 @@ const App = (() => {
 
   /* ── Populate dynamic Categories in nav and mobile ── */
   async function populateNavCategories() {
-    const raw  = await API.getCategoriesAsync();
-    const cats = raw.map(c => typeof c === 'string' ? c : c.name);
-    /* desktop: Categories dropdown */
-    const desktopList = document.getElementById('nav-categories-list');
-    if (desktopList && cats.length) {
-      desktopList.innerHTML = cats.map(name =>
-        `<li><a href="#" data-filter="subcat:${name}">${name}</a></li>`
+    const products = await API.getProducts();
+
+    /* Build subcat groups from actual product data */
+    const groups = { perfume: new Set(), hair: new Set(), body: new Set() };
+    products.forEach(p => { if (groups[p.cat]) groups[p.cat].add(p.subcat); });
+
+    const catMeta = {
+      perfume: { label: 'Perfume',   emoji: '🌸' },
+      hair:    { label: 'Hair Care', emoji: '💇' },
+      body:    { label: 'Body Care', emoji: '🧴' },
+    };
+
+    /* Desktop mega menu columns */
+    ['perfume','hair','body'].forEach(cat => {
+      const list = document.getElementById(`cats-mega-list-${cat}`);
+      if (!list) return;
+      const items = [...groups[cat]].sort();
+      list.innerHTML = items.map(name =>
+        `<li><a href="#" data-cat="${cat}" data-filter="subcat:${name}">${name}</a></li>`
       ).join('');
-    }
-    /* mobile: categories sub-nav */
+    });
+
+    /* Mobile: 3-section accordion chips */
     const mobCatList = document.getElementById('mobile-cats-list');
     if (mobCatList) {
-      mobCatList.innerHTML = cats.map(name =>
-        `<a href="#" data-filter="subcat:${name}">${name}</a>`
-      ).join('');
+      mobCatList.innerHTML = ['perfume','hair','body'].map(cat => {
+        const { label, emoji } = catMeta[cat];
+        const items = [...groups[cat]].sort();
+        if (!items.length) return '';
+        return `
+          <div class="mob-cats-group">
+            <p class="mob-cats-group-label">${emoji} ${label}</p>
+            <div class="mob-cats-chips">
+              ${items.map(name =>
+                `<a href="#" class="mob-cat-chip" data-cat="${cat}" data-filter="subcat:${name}">${name}</a>`
+              ).join('')}
+              <a href="#" class="mob-cat-chip mob-cat-chip--all" data-cat="${cat}">All ${label} →</a>
+            </div>
+          </div>`;
+      }).join('');
     }
   }
 
@@ -377,7 +552,7 @@ const App = (() => {
     _searchTimer = setTimeout(async () => {
       const ps = await API.getProducts({ search: q });
       if (!ps.length) {
-        list.innerHTML = `<div class="search-no-results">No results for "${q}"</div>`;
+        list.innerHTML = `<div class="search-no-results">Item not found — no results for "${q}"</div>`;
       } else {
         list.innerHTML = ps.slice(0, 6).map(p => `
           <div class="search-result-item" data-product-id="${p.id}">
@@ -419,6 +594,44 @@ const App = (() => {
     });
   }
 
+  async function _loadActivePromo() {
+    try {
+      const [settings, coupons] = await Promise.all([
+        API.getSettings().catch(() => ({})),
+        API.getCoupons(false).catch(() => []),
+      ]);
+
+      /* Sync hero background from DB so it works across devices/browsers */
+      if (settings.hero_bg) {
+        const stored = localStorage.getItem('ibh_hero_bg');
+        if (stored !== settings.hero_bg) {
+          localStorage.setItem('ibh_hero_bg', settings.hero_bg);
+          applyHeroBg();
+        }
+      }
+
+      const notifEl = document.querySelector('.notif-text');
+      if (!notifEl) return;
+
+      /* Admin-set announcement takes priority when active */
+      if (settings.notif_active === '1' && settings.notif_text) {
+        const badge = settings.notif_badge || 'OFFER';
+        notifEl.innerHTML = `<span class="notif-badge">${badge}</span> ${settings.notif_text}`;
+        return;
+      }
+      /* Fall back to active featured coupon */
+      const c = coupons[0];
+      if (c) {
+        const disc = c.type === 'percent' ? `${c.value}% off` : `KES ${c.value} off`;
+        const min  = c.min_order > 0 ? ` (min KES ${Number(c.min_order).toLocaleString()})` : '';
+        notifEl.innerHTML = `<span class="notif-badge">PROMO</span> Use code <strong>${c.code}</strong> — ${disc}${min} at checkout!`;
+      }
+    } catch {}
+  }
+
+  /* expose so admin settings panel can trigger a live refresh */
+  function _reloadNotif() { _loadActivePromo(); }
+
   /* ── Header scroll effect ── */
   function onScroll() {
     document.getElementById('header').classList.toggle('scrolled', window.scrollY > 60);
@@ -441,10 +654,14 @@ const App = (() => {
       return;
     }
 
-    /* Product card click — open modal only from image or body, not buttons */
+    /* Product card click — Quick View opens modal; body/name click goes to detail page */
     const card = t.closest('.pcard');
-    if (card && !t.closest('.pcard-wish') && !t.closest('[data-add-direct]')) {
-      Products.openModal(Number(card.dataset.productId));
+    if (card && !t.closest('.pcard-wish') && !t.closest('[data-add-direct]') && !t.closest('[data-buy-id]')) {
+      if (t.closest('.pcard-qv')) {
+        Products.openModal(Number(card.dataset.productId));
+      } else {
+        showProductDetail(Number(card.dataset.productId));
+      }
       return;
     }
 
@@ -549,6 +766,7 @@ const App = (() => {
       if (act === 'view-brands') showBrands();
       if (act === 'show-brands') { showBrands(); toggleMobileMenu(false); }
       if (act === 'show-about')  { e.preventDefault(); showAbout(); toggleMobileMenu(false); }
+      if (act === 'show-terms') { e.preventDefault(); showTerms(); toggleMobileMenu(false); }
       return;
     }
 
@@ -566,12 +784,12 @@ const App = (() => {
     const srItem = t.closest('.search-result-item');
     if (srItem) {
       if (srItem.dataset.productId) {
-        Products.openModal(Number(srItem.dataset.productId));
-        document.getElementById('search-results').hidden = true;
+        closeSearch();
+        showProductDetail(Number(srItem.dataset.productId));
       }
       if (srItem.dataset.searchAll) {
-        showShop({ search: srItem.dataset.searchAll }, `"${srItem.dataset.searchAll}"`, 'Search');
-        document.getElementById('search-results').hidden = true;
+        showShop({ search: srItem.dataset.searchAll }, srItem.dataset.searchAll, 'Search');
+        closeSearch();
       }
       return;
     }
@@ -601,9 +819,6 @@ const App = (() => {
     /* Populate Brands nav dropdown */
     await populateNavBrands();
 
-    /* Populate Brands ticker from stored brands */
-    await populateBrandsTicker();
-
     /* Populate Categories nav dropdown */
     await populateNavCategories();
 
@@ -625,19 +840,12 @@ const App = (() => {
 
     /* Close notification bar */
     document.getElementById('close-notif').addEventListener('click', dismissNotif);
+    _loadActivePromo();
 
-    /* Logo → home */
+    /* Logo → always go home from any page */
     document.getElementById('logo-link').addEventListener('click', e => {
       e.preventDefault();
-      if (_shopVisible || _brandsVisible) showHome();
-      else window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-
-    /* Home nav link */
-    document.getElementById('nav-home-link')?.addEventListener('click', e => {
-      e.preventDefault();
       showHome();
-      toggleMobileMenu(false);
     });
 
     /* Cart */
@@ -656,11 +864,19 @@ const App = (() => {
     });
     document.getElementById('checkout-modal-close').addEventListener('click', closeCheckoutModal);
 
-    /* Admin — open panel (index.html only; admin.html navigates directly) */
+    /* Admin button — only visible to admin/staff/branch_manager roles */
     const adminBtn = document.getElementById('admin-btn');
     if (adminBtn) {
+      function _updateAdminBtn() {
+        const u = Auth.currentUser();
+        const isPrivileged = u && ['admin','staff','branch_manager'].includes(u.role);
+        adminBtn.style.display = isPrivileged ? '' : 'none';
+      }
+      _updateAdminBtn();
+      /* Re-evaluate when auth state changes (after init validates session) */
+      setTimeout(_updateAdminBtn, 1200);
       adminBtn.addEventListener('click', () => {
-        window.location.href = 'admin.html';
+        window.location.href = '/ibh-manage';
       });
     }
 
@@ -680,41 +896,37 @@ const App = (() => {
       btn.addEventListener('click', () => btn.closest('.mobile-nav-group').classList.toggle('open'));
     });
 
-    /* Search (inline bar — always visible on desktop) */
-    const searchInput  = document.getElementById('search-input');
-    const searchClear  = document.getElementById('search-clear');
-    searchInput.addEventListener('input', () => {
-      handleSearch(searchInput.value);
-      if (searchClear) searchClear.hidden = !searchInput.value;
-    });
-    searchInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        showShop({ search: searchInput.value }, `"${searchInput.value}"`, 'Search');
-        document.getElementById('search-results').hidden = true;
-      }
-      if (e.key === 'Escape') {
-        document.getElementById('search-results').hidden = true;
-      }
-    });
-    if (searchClear) {
-      searchClear.addEventListener('click', () => {
-        searchInput.value = '';
-        searchClear.hidden = true;
-        document.getElementById('search-results').hidden = true;
-        searchInput.focus();
-      });
+    /* ── Search overlay ── */
+    const searchOverlay  = document.getElementById('search-overlay');
+    const searchInput    = document.getElementById('search-input');
+    const searchClose    = document.getElementById('search-overlay-close');
+    const searchBackdrop = document.getElementById('search-overlay-backdrop');
+    const searchToggle   = document.getElementById('search-toggle');
+
+    function openSearch() {
+      searchOverlay.classList.add('open');
+      searchOverlay.setAttribute('aria-hidden', 'false');
+      setTimeout(() => searchInput?.focus(), 120);
+    }
+    function closeSearch() {
+      searchOverlay.classList.remove('open');
+      searchOverlay.setAttribute('aria-hidden', 'true');
+      document.getElementById('search-results').hidden = true;
+      if (searchInput) searchInput.value = '';
     }
 
-    /* Brands ticker — click any brand name to view its products */
-    const brandsTicker = document.querySelector('.brands-ticker-wrap');
-    if (brandsTicker) {
-      brandsTicker.addEventListener('click', e => {
-        const span = e.target.closest('span');
-        if (!span) return;
-        const brand = span.textContent.trim();
-        if (brand) showShop({ brand }, brand, 'Brand');
-      });
-    }
+    searchToggle?.addEventListener('click', openSearch);
+    searchClose?.addEventListener('click', closeSearch);
+    searchBackdrop?.addEventListener('click', closeSearch);
+
+    searchInput?.addEventListener('input', () => handleSearch(searchInput.value));
+    searchInput?.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && searchInput.value.trim()) {
+        showShop({ search: searchInput.value }, searchInput.value, 'Search');
+        closeSearch();
+      }
+      if (e.key === 'Escape') closeSearch();
+    });
 
     /* Trending filter tabs */
     document.getElementById('trending-filter-tabs').addEventListener('click', e => {
@@ -739,6 +951,24 @@ const App = (() => {
 
     /* About back button */
     document.getElementById('about-back')?.addEventListener('click', showHome);
+    document.getElementById('terms-back')?.addEventListener('click', showHome);
+
+    /* Product detail page back button */
+    document.getElementById('pdp-back')?.addEventListener('click', () => history.back());
+
+    /* Shop sidebar filter clicks */
+    document.getElementById('shop-sidebar')?.addEventListener('click', e => {
+      const item = e.target.closest('.sidebar-filter-item');
+      if (!item) return;
+      e.preventDefault();
+      if ('sidebarCat' in item.dataset) {
+        const cat = item.dataset.sidebarCat;
+        if (cat) showShop({ cat }, { perfume: 'Perfumes', hair: 'Hair Care', body: 'Body Care' }[cat] || cat, 'Shop');
+        else showShop({}, 'All Products', 'Shop');
+      } else if ('sidebarBrand' in item.dataset) {
+        showShop({ brand: item.dataset.sidebarBrand }, item.dataset.sidebarBrand, 'Brand');
+      }
+    });
 
     /* Mobile cart button */
     document.getElementById('mobile-cart-btn')?.addEventListener('click', () => {
@@ -759,7 +989,7 @@ const App = (() => {
       mobileSearch.addEventListener('input', () => handleSearch(mobileSearch.value));
       mobileSearch.addEventListener('keydown', e => {
         if (e.key === 'Enter' && mobileSearch.value.trim()) {
-          showShop({ search: mobileSearch.value }, `"${mobileSearch.value}"`, 'Search');
+          showShop({ search: mobileSearch.value }, mobileSearch.value, 'Search');
           document.getElementById('search-results').hidden = true;
           toggleMobileMenu(false);
         }
@@ -789,19 +1019,33 @@ const App = (() => {
     trackClose?.addEventListener('click', _closeTrackModal);
     trackOverlay?.addEventListener('click', e => { if (e.target === trackOverlay) _closeTrackModal(); });
 
+    const trackPhoneInput = document.getElementById('track-phone-input');
+
     async function _doTrackOrder() {
-      const id  = trackInput?.value.trim().toUpperCase();
-      const out = document.getElementById('track-order-result');
-      if (!id) { out.innerHTML = `<p style="color:var(--err);font-size:.875rem;text-align:center">Please enter an order ID</p>`; return; }
+      const orderId = trackInput?.value.trim().toUpperCase();
+      const phone   = trackPhoneInput?.value.trim().replace(/\s+/g, '');
+      const out     = document.getElementById('track-order-result');
+
+      if (!orderId || !phone) {
+        out.innerHTML = `<p style="color:var(--err);font-size:.875rem;text-align:center">Please enter both your phone number and order ID</p>`;
+        return;
+      }
       out.innerHTML = `<p style="text-align:center;color:var(--n-400);font-size:.875rem">Searching…</p>`;
       try {
-        const orders = await fetch(`${Config.BASE_URL}/orders?search=${encodeURIComponent(id)}`).then(r => r.json());
-        const order  = orders.find(o => o.id.toUpperCase() === id) || orders[0];
+        /* Search by order ID — then verify phone matches */
+        const orders = await fetch(`${Config.BASE_URL}/orders?search=${encodeURIComponent(orderId)}`).then(r => r.json());
+
+        const normPhone = phone.replace(/\s+/g, '').replace(/^\+254/, '0').replace(/^254/, '0');
+        const order = orders.find(o =>
+          o.id.toUpperCase() === orderId &&
+          (o.customer?.phone || '').replace(/\s+/g, '').replace(/^\+254/, '0').replace(/^254/, '0').includes(normPhone.slice(-9))
+        );
+
         if (!order) {
           out.innerHTML = `<div style="text-align:center;padding:1rem 0">
             <div style="font-size:2rem;margin-bottom:.5rem">🔍</div>
             <p style="font-weight:600;color:var(--n-800);margin-bottom:.25rem">Order not found</p>
-            <p style="font-size:.8125rem;color:var(--n-500)">Check the order ID and try again. It should look like <strong>IBH-1234567890</strong></p>
+            <p style="font-size:.8125rem;color:var(--n-500)">No order matched your details. Check your phone number or order ID and try again.</p>
           </div>`;
           return;
         }
@@ -838,6 +1082,16 @@ const App = (() => {
 
     trackSearch?.addEventListener('click', _doTrackOrder);
     trackInput?.addEventListener('keydown', e => { if (e.key === 'Enter') _doTrackOrder(); });
+    trackPhoneInput?.addEventListener('keydown', e => { if (e.key === 'Enter') _doTrackOrder(); });
+
+    /* Back to top */
+    const backTopBtn = document.getElementById('back-to-top');
+    if (backTopBtn) {
+      window.addEventListener('scroll', () => {
+        backTopBtn.classList.toggle('visible', window.scrollY > 300);
+      }, { passive: true });
+      backTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    }
 
     /* Delegated clicks */
     document.addEventListener('click', handleClick);
@@ -846,7 +1100,7 @@ const App = (() => {
     document.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         const card = document.activeElement.closest('.pcard');
-        if (card) { e.preventDefault(); Products.openModal(Number(card.dataset.productId)); }
+        if (card) { e.preventDefault(); showProductDetail(Number(card.dataset.productId)); }
       }
       if (e.key === 'Escape') {
         closeCart(); closeProductModal(); closeCheckoutModal();
@@ -868,10 +1122,12 @@ const App = (() => {
     showBrands,
     showWishlistPage,
     showAbout,
+    showProductDetail,
     applyHeroBg,
     closeCart,
     closeProductModal,
     closeCheckoutModal,
+    _reloadNotif,
   };
 })();
 

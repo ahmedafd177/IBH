@@ -12,6 +12,13 @@ const Auth = (() => {
   function currentUser() { return _user; }
 
   function _saveSession(data) {
+    /* Clear any stale session from a previously logged-in user */
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('ibh_account');
+    localStorage.removeItem('ibh_wish');
+    localStorage.removeItem('ibh_cart');
+
     localStorage.setItem(SESSION_KEY, data.token);
     const u = { id: data.id, name: data.name, phone: data.phone, email: data.email, role: data.role };
     localStorage.setItem(USER_KEY, JSON.stringify(u));
@@ -31,10 +38,12 @@ const Auth = (() => {
       label.textContent = _user.name.split(' ')[0];
       label.classList.add('visible');
       btn.title = `Signed in as ${_user.name}`;
+      btn.classList.add('logged-in');
     } else {
       label.textContent = '';
       label.classList.remove('visible');
       btn.title = 'Sign In / My Account';
+      btn.classList.remove('logged-in');
     }
   }
 
@@ -89,8 +98,10 @@ const Auth = (() => {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem('ibh_account');
     localStorage.removeItem('ibh_wish');
+    localStorage.removeItem('ibh_cart');
     _user = null;
     _updateHeader();
+    if (typeof Cart !== 'undefined') { Cart.updateBadge(); Cart.render(); }
     if (typeof App !== 'undefined') App.toast('You have been signed out successfully', '');
   }
 
@@ -203,6 +214,18 @@ const Auth = (() => {
     document.getElementById('auth-register-form')?.addEventListener('submit', async e => {
       e.preventDefault();
       document.getElementById('auth-error').style.display = 'none';
+
+      const email    = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirm  = document.getElementById('reg-password-confirm').value;
+
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        _showError('Please enter a valid email address'); return;
+      }
+      if (password !== confirm) {
+        _showError('Passwords do not match'); return;
+      }
+
       const btn = document.getElementById('auth-register-btn');
       btn.disabled = true; btn.textContent = 'Creating account…';
       try {
@@ -212,8 +235,8 @@ const Auth = (() => {
           body: JSON.stringify({
             name:     document.getElementById('reg-name').value.trim(),
             phone:    document.getElementById('reg-phone').value.trim(),
-            email:    document.getElementById('reg-email').value.trim(),
-            password: document.getElementById('reg-password').value,
+            email,
+            password,
           }),
         });
         const data = await res.json();
@@ -228,8 +251,9 @@ const Auth = (() => {
       }
     });
 
-    /* Google Sign-In */
-    if (typeof google !== 'undefined' && Config.GOOGLE_CLIENT_ID) {
+    /* Google Sign-In — initialise once the GSI library is ready */
+    function _initGoogleBtn() {
+      if (typeof google === 'undefined' || !Config.GOOGLE_CLIENT_ID) return;
       google.accounts.id.initialize({
         client_id: Config.GOOGLE_CLIENT_ID,
         callback: async (response) => {
@@ -250,12 +274,25 @@ const Auth = (() => {
           }
         },
       });
-      google.accounts.id.renderButton(
-        document.getElementById('auth-google-btn'),
-        { theme: 'outline', size: 'large', width: 300, text: 'signin_with' },
-      );
+      const btnEl = document.getElementById('auth-google-btn');
+      if (btnEl) {
+        google.accounts.id.renderButton(btnEl, {
+          theme: 'outline', size: 'large', width: 300, text: 'signin_with',
+        });
+      }
+      /* Show the section now that the button is rendered */
+      const sec = document.getElementById('auth-google-section');
+      if (sec) sec.style.display = '';
+    }
+
+    if (!Config.GOOGLE_CLIENT_ID) {
+      /* No client ID configured — hide Google section permanently */
+      const sec = document.getElementById('auth-google-section');
+      if (sec) sec.style.display = 'none';
     } else {
-      document.getElementById('auth-google-section').style.display = 'none';
+      /* Try immediately (script may already be loaded), then via callback */
+      _initGoogleBtn();
+      window.onGoogleLibraryLoad = _initGoogleBtn;
     }
   }
 
