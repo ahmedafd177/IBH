@@ -37,3 +37,5 @@ database/*.sqlite-wal
 # Uploaded files
 assets/uploads/*
 !assets/uploads/.gitkeep
+.vercel
+.env*

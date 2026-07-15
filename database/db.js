@@ -331,7 +331,13 @@ const ready = (async () => {
   await seedAdmin();
 })().catch(e => {
   console.error('Database initialization failed:', e);
-  process.exit(1);
+  /* Do NOT process.exit() or rethrow here — this runs inside a shared
+     serverless Lambda instance that may be mid-flight on other, unrelated
+     concurrent requests (static assets, other routes). Exiting or leaving
+     `ready` rejected kills/breaks all of them, not just the DB-dependent
+     one. Swallow the error so `ready` resolves; callers proceed straight
+     to pool.query(), which fails (and fails gracefully) only for requests
+     that actually touch the DB. The next cold start retries initSchema(). */
 });
 
 module.exports = { prepare, exec, transaction, pool, ready };

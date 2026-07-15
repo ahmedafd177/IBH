@@ -26,6 +26,10 @@
   position: relative; overflow: hidden;
   cursor: zoom-in;
 }
+/* Neutral backdrop for cards with a real product photo (vs. the emoji-fallback gradient) */
+.pcard-img.has-photo {
+  background: #F3F4F6;
+}
 
 /* Bottom gradient overlay on hover */
 .pcard-img::after {
@@ -87,8 +91,12 @@
 }
 .pcard:hover .pcard-img-emoji { transform: scale(1.22); }
 .pcard-badges { position: absolute; top: 0.625rem; left: 0.625rem; display: flex; gap: 0.25rem; flex-wrap: wrap; z-index: 2; }
-.pcard-wish {
+.pcard-icon-stack {
   position: absolute; top: 0.5rem; right: 0.5rem;
+  display: flex; flex-direction: column; gap: 0.375rem;
+  z-index: 2;
+}
+.pcard-icon-btn {
   width: 32px; height: 32px;
   background: var(--white);
   border-radius: 50%;
@@ -96,9 +104,11 @@
   font-size: 0.875rem;
   box-shadow: var(--sh-sm);
   transition: var(--t-fast);
-  z-index: 2;
 }
-.pcard-wish:hover { transform: scale(1.15); background: var(--err-bg); }
+.pcard-icon-btn:hover { transform: scale(1.15); }
+.pcard-quickadd:hover { background: var(--blue-xl); }
+.pcard-quickadd:hover svg { color: var(--blue) !important; }
+.pcard-wish:hover { background: var(--err-bg); }
 .pcard-wish.loved { background: var(--err-bg); }
 .pcard-wish.loved svg { fill: var(--err); stroke: var(--err); }
 .pcard-body { padding: 0.875rem; flex: 1; display: flex; flex-direction: column; }
@@ -893,6 +903,15 @@
 .co-confirm-actions {
   display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center;
 }
+.co-confirm-contact {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center;
+  margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--n-200);
+  font-size: 0.8125rem; color: var(--n-500);
+}
+.co-confirm-contact a {
+  color: var(--blue); font-weight: 600; text-decoration: none;
+}
+.co-confirm-contact a:hover { text-decoration: underline; }
 
 /* ── Google popup overlay ── */
 .co-google-popup {
@@ -1068,22 +1087,28 @@
 .back-to-top.visible { opacity: 1; visibility: visible; }
 .back-to-top:hover { background: var(--blue); color: #fff; border-color: var(--blue); transform: translateY(-2px); }
 
-/* Hide floating buttons while the cart drawer or a modal covers the
-   same bottom-right corner — otherwise they sit on top of the drawer's
-   checkout footer / total and block it. */
+/* Hide floating buttons while the cart drawer, a modal, the mobile nav
+   drawer, or search overlays the same area — otherwise they sit on top
+   of the drawer/overlay content and look misplaced. */
 .cart-drawer.open ~ .wa-float,
 .modal-overlay.open ~ .wa-float,
+.mobile-nav-overlay.open ~ .wa-float,
+.mobile-nav.open ~ .wa-float,
+body.search-open .wa-float,
 .cart-drawer.open ~ .back-to-top.visible,
-.modal-overlay.open ~ .back-to-top.visible {
+.modal-overlay.open ~ .back-to-top.visible,
+.mobile-nav-overlay.open ~ .back-to-top.visible,
+.mobile-nav.open ~ .back-to-top.visible,
+body.search-open .back-to-top.visible {
   opacity: 0; visibility: hidden; pointer-events: none;
 }
 
 /* ── Responsive for 2-col checkout ── */
 @media (max-width: 700px) {
   .co-layout { flex-direction: column; margin: 0 -1.5rem -1.5rem; }
-  .co-sidebar { width: 100%; border-right: none; border-top: 1.5px solid var(--n-100); }
+  .co-sidebar { width: 100%; border-right: none; order: -1; }
   .co-sidebar-inner { position: static; max-height: none; }
-  .co-main { border-right: none; }
+  .co-main { border-right: none; border-top: 1.5px solid var(--n-100); }
   .wa-float { bottom: 4.5rem; right: 1rem; width: 46px; height: 46px; }
   .back-to-top { bottom: 1rem; right: 1rem; }
 }

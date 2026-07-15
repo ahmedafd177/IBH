@@ -39,18 +39,25 @@ const Products = (() => {
 
     return `
       <article class="pcard" data-product-id="${p.id}" role="button" tabindex="0" aria-label="${p.name}">
-        <div class="pcard-img${p.imageAlt1 ? ' has-alt' : ''}">
+        <div class="pcard-img${p.imageAlt1 ? ' has-alt' : ''}${p.imageMain ? ' has-photo' : ''}">
           ${imgHtml}
           <div class="pcard-badges">${badges}</div>
           <button class="pcard-qv" type="button" aria-label="Quick view ${p.name}">Quick View</button>
-          <button class="pcard-wish${loved ? ' loved' : ''}"
-            data-wish-id="${p.id}" title="${loved ? 'Remove from wishlist' : 'Add to wishlist'}"
-            aria-label="Wishlist" aria-pressed="${loved}">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="${loved ? 'currentColor' : 'none'}"
-              stroke="currentColor" stroke-width="2" style="color:${loved ? 'var(--err)' : 'var(--n-400)'}">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </button>
+          <div class="pcard-icon-stack">
+            <button class="pcard-icon-btn pcard-quickadd" data-add-direct="${p.id}" title="Add to cart" aria-label="Add to cart">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--n-400)">
+                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+              </svg>
+            </button>
+            <button class="pcard-icon-btn pcard-wish${loved ? ' loved' : ''}"
+              data-wish-id="${p.id}" title="${loved ? 'Remove from wishlist' : 'Add to wishlist'}"
+              aria-label="Wishlist" aria-pressed="${loved}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="${loved ? 'currentColor' : 'none'}"
+                stroke="currentColor" stroke-width="2" style="color:${loved ? 'var(--err)' : 'var(--n-400)'}">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="pcard-body" data-open-id="${p.id}">
           <div class="pcard-brand">${p.brand}</div>

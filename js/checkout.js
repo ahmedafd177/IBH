@@ -450,11 +450,19 @@ const Checkout = (() => {
 
         <div class="co-confirm-actions">
           <button class="btn btn-primary" id="co-print-receipt">
-            🧾 Print Receipt
+            📄 View / Download Receipt
           </button>
           <button class="btn btn-ghost" onclick="App.closeCheckoutModal()">
             Continue Shopping →
           </button>
+        </div>
+
+        <div class="co-confirm-contact">
+          <span>Need help with this order?</span>
+          <a href="https://wa.me/254758284018?text=Hi%2C+I+need+help+with+order+${order.id}" target="_blank" rel="noopener">
+            💬 WhatsApp us
+          </a>
+          <a href="tel:+254758284018">📞 Call us</a>
         </div>
 
         ${_items.length ? `
@@ -637,7 +645,6 @@ const Checkout = (() => {
         </div>
 
         <div class="co-trust-badges">
-          <div class="co-trust-item"><span class="co-trust-icon">🔒</span> Secure SSL Checkout</div>
           <div class="co-trust-item"><span class="co-trust-icon">🛵</span> 2–3 business days delivery</div>
           <div class="co-trust-item"><span class="co-trust-icon">↩️</span> Returns within 24hrs of purchase</div>
           <div class="co-trust-item">

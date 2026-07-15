@@ -10,7 +10,8 @@
     "build": "node build.js",
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "migrate": "node database/migrate-to-postgres.js"
+    "migrate": "node database/migrate-to-postgres.js",
+    "sync-local-db": "bash database/sync-local-from-prod.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

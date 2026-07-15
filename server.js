@@ -5,6 +5,16 @@
    ═══════════════════════════════════════ */
 require('dotenv').config();
 
+/* A single serverless instance can be mid-flight on several unrelated
+   concurrent requests. Node's default behavior for an unhandled promise
+   rejection (e.g. a transient DB error in a route with no try/catch) is
+   to crash the whole process — killing every other in-flight request on
+   this instance, not just the one that failed. Log instead so one bad
+   request can't take the rest down with it. */
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled promise rejection:', err);
+});
+
 const express = require('express');
 const path    = require('path');
 const fs      = require('fs');

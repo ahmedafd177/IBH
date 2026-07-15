@@ -2,7 +2,6 @@
    APP — bootstrap, navigation, events, toast
    ═══════════════════════════════════════ */
 const App = (() => {
-  let _toastTimer;
   let _shopVisible     = false;
   let _brandsVisible   = false;
   let _wishlistVisible = false;
@@ -30,16 +29,19 @@ const App = (() => {
     else showHome();
   }
 
-  /* ── Toast ── */
+  /* ── Toast ──
+     Each toast owns its own dismiss timer so multiple toasts (e.g.
+     deleting several brands in a row) stack and each auto-dismisses
+     independently, instead of a later toast cancelling an earlier
+     one's timer and leaving it stuck on screen. */
   function toast(msg, type = '') {
-    clearTimeout(_toastTimer);
     const container = document.getElementById('toast-container');
     const el = document.createElement('div');
     el.className = `toast ${type}`;
     el.textContent = msg;
     container.appendChild(el);
     requestAnimationFrame(() => el.classList.add('show'));
-    _toastTimer = setTimeout(() => {
+    setTimeout(() => {
       el.classList.remove('show');
       setTimeout(() => el.remove(), 400);
     }, 3000);
@@ -114,7 +116,7 @@ const App = (() => {
       <a href="#" class="sidebar-filter-item${activeCat === c ? ' active' : ''}" data-sidebar-cat="${c}">
         ${catLabels[c]}
       </a>`).join('');
-    const brandsHtml = brands.map(b => {
+    const brandLink = (b) => {
       const letter = (b.name || '?')[0].toUpperCase();
       const avatar = b.image
         ? `<img src="${b.image}" alt="${b.name}" class="sidebar-brand-avatar">`
@@ -122,17 +124,44 @@ const App = (() => {
       return `<a href="#" class="sidebar-filter-item sidebar-brand-item${activeBrand === b.name ? ' active' : ''}" data-sidebar-brand="${b.name}">
         <span class="sidebar-brand-icon">${avatar}</span>${b.name}
       </a>`;
-    }).join('');
-    inner.innerHTML = `
+    };
+
+    /* When a brand is selected, pin it above a collapsed "Other brands"
+       list and collapse Categories too, so the shopper isn't scanning an
+       unrelated full list — everything stays reachable via the toggle. */
+    const activeBrandObj = activeBrand ? brands.find(b => b.name === activeBrand) : null;
+    const otherBrands     = activeBrandObj ? brands.filter(b => b.name !== activeBrand) : brands;
+    const brandsHtml      = otherBrands.map(brandLink).join('');
+
+    const catItems = `
+      <a href="#" class="sidebar-filter-item${!activeCat ? ' active' : ''}" data-sidebar-cat="">All</a>
+      ${catsHtml}`;
+
+    const categoriesSection = activeBrandObj ? `
+      <details class="sidebar-section sidebar-collapse">
+        <summary class="sidebar-section-title">Categories</summary>
+        ${catItems}
+      </details>` : `
       <div class="sidebar-section">
         <div class="sidebar-section-title">Categories</div>
-        <a href="#" class="sidebar-filter-item${!activeCat ? ' active' : ''}" data-sidebar-cat="">All</a>
-        ${catsHtml}
-      </div>
+        ${catItems}
+      </div>`;
+
+    const brandsSection = activeBrandObj ? `
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Brand</div>
+        ${brandLink(activeBrandObj)}
+        <details class="sidebar-collapse">
+          <summary>Other brands (${otherBrands.length})</summary>
+          ${brandsHtml || '<p class="sidebar-empty">No other brands found</p>'}
+        </details>
+      </div>` : `
       <div class="sidebar-section">
         <div class="sidebar-section-title">Brands</div>
         ${brandsHtml || '<p class="sidebar-empty">No brands found</p>'}
       </div>`;
+
+    inner.innerHTML = categoriesSection + brandsSection;
   }
 
   /* ── Product Detail Page ── */
@@ -501,7 +530,7 @@ const App = (() => {
   }
 
   /* ── Hero background ── */
-  const DEFAULT_HERO_BG = '/assets/videos/backgroud.mp4';
+  const DEFAULT_HERO_BG = 'https://qfijtemeburiqtkzfbnt.supabase.co/storage/v1/object/public/uploads/hero-bg.mp4';
 
   function applyHeroBg() {
     const url    = (localStorage.getItem('ibh_hero_bg') || DEFAULT_HERO_BG).trim();
@@ -580,6 +609,7 @@ const App = (() => {
     document.getElementById('mobile-overlay').classList.toggle('open', open);
     document.getElementById('menu-toggle').classList.toggle('open', open);
     document.getElementById('menu-toggle').setAttribute('aria-expanded', String(open));
+    document.body.style.overflow = open ? 'hidden' : '';
   }
 
   /* ── Notification bar ── */
@@ -864,22 +894,6 @@ const App = (() => {
     });
     document.getElementById('checkout-modal-close').addEventListener('click', closeCheckoutModal);
 
-    /* Admin button — only visible to admin/staff/branch_manager roles */
-    const adminBtn = document.getElementById('admin-btn');
-    if (adminBtn) {
-      function _updateAdminBtn() {
-        const u = Auth.currentUser();
-        const isPrivileged = u && ['admin','staff','branch_manager'].includes(u.role);
-        adminBtn.style.display = isPrivileged ? '' : 'none';
-      }
-      _updateAdminBtn();
-      /* Re-evaluate when auth state changes (after init validates session) */
-      setTimeout(_updateAdminBtn, 1200);
-      adminBtn.addEventListener('click', () => {
-        window.location.href = '/ibh-manage';
-      });
-    }
-
     /* Wishlist panel */
     document.getElementById('wishlist-btn').addEventListener('click', showWishlistPage);
     document.getElementById('mobile-wishlist-btn')?.addEventListener('click', () => {
@@ -906,11 +920,15 @@ const App = (() => {
     function openSearch() {
       searchOverlay.classList.add('open');
       searchOverlay.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('search-open');
+      document.body.style.overflow = 'hidden';
       setTimeout(() => searchInput?.focus(), 120);
     }
     function closeSearch() {
       searchOverlay.classList.remove('open');
       searchOverlay.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('search-open');
+      document.body.style.overflow = '';
       document.getElementById('search-results').hidden = true;
       if (searchInput) searchInput.value = '';
     }

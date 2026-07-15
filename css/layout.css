@@ -1100,6 +1100,26 @@
   display: flex; align-items: center; justify-content: center;
 }
 .sidebar-empty { font-size: .8125rem; color: var(--n-400); padding: .5rem 1rem; }
+
+/* ── Collapsible sidebar sections (e.g. Categories / Other brands when a brand filter is active) ── */
+.sidebar-collapse summary {
+  cursor: pointer;
+  list-style: none;
+}
+.sidebar-collapse summary::-webkit-details-marker { display: none; }
+.sidebar-collapse summary::after {
+  content: '▾';
+  float: right;
+  margin-right: 1rem;
+  color: var(--n-300);
+  transition: transform var(--t-fast);
+}
+.sidebar-collapse[open] summary::after { transform: rotate(180deg); }
+.sidebar-collapse:not(.sidebar-section) summary {
+  padding: .5rem 1rem;
+  font-size: .8125rem; font-weight: 600; color: var(--blue);
+}
+.sidebar-collapse:not(.sidebar-section) summary:hover { background: var(--n-50); }
 .shop-main { min-width: 0; }
 
 /* ── Product Detail Page ── */
@@ -1241,6 +1261,16 @@
     margin: 0;
     justify-self: center;
     display: flex; align-items: center;
+    /* Let this grid track shrink below its content's intrinsic width —
+       otherwise a long logo name pushes .header-actions (search/cart/
+       account) past the viewport edge, where body's overflow-x:hidden
+       clips it off entirely instead of wrapping. */
+    min-width: 0;
+    max-width: 100%;
+  }
+  .header-logo .logo-text { min-width: 0; }
+  .header-logo .logo-name {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .header-actions {
     grid-column: 3; grid-row: 1;

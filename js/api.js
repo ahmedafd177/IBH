@@ -24,7 +24,14 @@ const API = (() => {
       ...opts,
       body: opts.body && !(opts.body instanceof FormData) ? JSON.stringify(opts.body) : opts.body,
     });
-    if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
+    if (!res.ok) {
+      let message = `API ${path} → ${res.status}`;
+      try {
+        const body = await res.json();
+        if (body?.error) message = body.error;
+      } catch { /* response wasn't JSON — keep the generic message */ }
+      throw new Error(message);
+    }
     return res.json();
   };
 
