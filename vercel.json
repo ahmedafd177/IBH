@@ -1,11 +1,14 @@
 {
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "partials/**"
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": "{css,js,partials,assets/images,assets/uploads}/**"
+      }
     }
-  },
+  ],
   "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/api/index" }
+    { "src": "/(.*)", "dest": "/api/index.js" }
   ]
 }
